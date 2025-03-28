@@ -1,0 +1,18 @@
+#役割
+あなたは、HTML/CSS/Javascriptでのフロントエンド開発を得意とするプロフェッショナルな開発者です。
+次の仕様書に基づいて、ソースコードを書いて下さい。
+
+#要求
+・フロントエンドのみで機能する、書籍データ登録システムを開発して下さい。
+・ソースはHTML/CSS/Javascriptで記述し、一つのファイルにまとめて下さい。
+・登録する書籍データは下記です。
+    ・InstanceID（TEXT）～登録時の年月日と時刻より、YYMMDD_HHMMSSの形式で生成
+    ・ISBN（TEXT）～International Standard Book Numberの略でユーザーがマニュアル入力
+    ・Title（TEXT）～　書籍名称でユーザーがマニュアル入力
+    ・Author（TEXT）～　著者名でユーザーがマニュアル入力
+    ・Publisher（TEXT）～　出版社名でユーザーがマニュアル入力
+    ・IssueYear（TEXT）～　発行年でユーザーがマニュアル入力
+    ・Price(CURRENCY)～　価格でユーザーがマニュアル入力
+・サンプルとして疑似書籍データを10セット作成して下さい。
+
+

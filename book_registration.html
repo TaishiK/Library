@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>書籍データ登録</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+
+        label {
+            display: inline-block;
+            width: 100px;
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 300px;
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+
+        button {
+            display: block;
+            width: 100px;
+            margin: 20px auto;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>書籍データ登録</h1>
+
+    <form id="bookForm">
+        <label for="isbn">ISBN:</label>
+        <input type="text" id="isbn" name="isbn"><br><br>
+
+        <label for="title">タイトル:</label>
+        <input type="text" id="title" name="title"><br><br>
+
+        <label for="author">著者:</label>
+        <input type="text" id="author" name="author"><br><br>
+
+        <label for="publisher">出版社:</label>
+        <input type="text" id="publisher" name="publisher" style="ime-mode: active;"><br><br>
+
+        <label for="issueYear">発行年:</label>
+        <input type="text" id="issueYear" name="issueYear"><br><br>
+
+        <label for="price">価格:</label>
+        <input type="number" id="price" name="price"><br><br>
+
+        <button type="button" onclick="registerBook()">登録</button>
+    </form>
+
+    <h2>登録データ一覧</h2>
+    <table id="bookTable">
+        <thead>
+            <tr>
+                <th>InstanceID</th>
+                <th>ISBN</th>
+                <th>タイトル</th>
+                <th>著者</th>
+                <th>出版社</th>
+                <th>発行年</th>
+                <th>価格</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+
+    <script>
+        // JavaScriptロジック
+        function registerBook() {
+            const isbn = document.getElementById("isbn").value;
+            const title = document.getElementById("title").value;
+            const author = document.getElementById("author").value;
+            const publisher = document.getElementById("publisher").value;
+            const issueYear = document.getElementById("issueYear").value;
+            const price = document.getElementById("price").value;
+
+            // 入力値の検証
+            if (!isbn || !title || !author || !publisher || !issueYear || !price) {
+                alert("すべての項目を入力してください。");
+                return;
+            }
+
+            if (isNaN(price)) {
+                alert("価格は数値で入力してください。");
+                return;
+            }
+
+            if (isNaN(issueYear)) {
+                alert("発行年は数値で入力してください。");
+                return;
+            }
+
+            // InstanceIDを生成
+            const instanceID = generateInstanceID();
+
+            // データをlocalStorageに保存
+            saveBookData(instanceID, isbn, title, author, publisher, issueYear, price);
+
+            // テーブルにデータを表示
+            displayBookData();
+
+            // フォームをクリア
+            clearForm();
+        }
+
+        function generateInstanceID() {
+            const now = new Date();
+            const year = now.getFullYear().toString().slice(-2);
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hour = String(now.getHours()).padStart(2, '0');
+            const minute = String(now.getMinutes()).padStart(2, '0');
+            const second = String(now.getSeconds()).padStart(2, '0');
+            return `${year}${month}${day}_${hour}${minute}${second}`;
+        }
+
+        function saveBookData(instanceID, isbn, title, author, publisher, issueYear, price) {
+            const bookData = {
+                isbn: isbn,
+                title: title,
+                author: author,
+                publisher: publisher,
+                issueYear: issueYear,
+                price: price
+            };
+            localStorage.setItem(instanceID, JSON.stringify(bookData));
+        }
+
+        function displayBookData() {
+            const bookTable = document.getElementById("bookTable").getElementsByTagName('tbody')[0];
+            bookTable.innerHTML = ""; // テーブルをクリア
+
+            for (let i = 0; i < localStorage.length; i++) {
+                const instanceID = localStorage.key(i);
+                const bookData = JSON.parse(localStorage.getItem(instanceID));
+
+                const newRow = bookTable.insertRow();
+                const instanceIDCell = newRow.insertCell();
+                const isbnCell = newRow.insertCell();
+                const titleCell = newRow.insertCell();
+                const authorCell = newRow.insertCell();
+                const publisherCell = newRow.insertCell();
+                const issueYearCell = newRow.insertCell();
+                const priceCell = newRow.insertCell();
+
+                instanceIDCell.innerHTML = instanceID;
+                isbnCell.innerHTML = bookData.isbn;
+                titleCell.innerHTML = bookData.title;
+                authorCell.innerHTML = bookData.author;
+                publisherCell.innerHTML = bookData.publisher;
+                issueYearCell.innerHTML = bookData.issueYear;
+                priceCell.innerHTML = bookData.price;
+            }
+        }
+
+        function clearForm() {
+            document.getElementById("isbn").value = "";
+            document.getElementById("title").value = "";
+            document.getElementById("author").value = "";
+            document.getElementById("publisher").value = "";
+            document.getElementById("issueYear").value = "";
+            document.getElementById("price").value = "";
+        }
+
+        // ページ読み込み時にデータを表示
+        window.onload = function() {
+            displayBookData();
+        };
+
+        // 初期データを追加
+        function addInitialData() {
+            const initialData = [
+                { instanceID: "250328_164800", isbn: "978-4-04-064584-1", title: "ソードアート・オンライン1", author: "川原礫", publisher: "KADOKAWA", issueYear: "2009", price: "610" },
+                { instanceID: "250328_164801", isbn: "978-4-04-064585-8", title: "ソードアート・オンライン2", author: "川原礫", publisher: "KADOKAWA", issueYear: "2009", price: "630" },
+                { instanceID: "250328_164802", isbn: "978-4-04-064586-5", title: "ソードアート・オンライン3", author: "川原礫", publisher: "KADOKAWA", issueYear: "2009", price: "610" },
+                { instanceID: "250328_164803", isbn: "978-4-04-064587-2", title: "ソードアート・オンライン4", author: "川原礫", publisher: "KADOKAWA", issueYear: "2010", price: "630" },
+                { instanceID: "250328_164804", isbn: "978-4-04-064588-9", title: "ソードアート・オンライン5", author: "川原礫", publisher: "KADOKAWA", issueYear: "2010", price: "610" },
+                { instanceID: "250328_164805", isbn: "978-4-04-064589-6", title: "ソードアート・オンライン6", author: "川原礫", publisher: "KADOKAWA", issueYear: "2010", price: "630" },
+                { instanceID: "250328_164806", isbn: "978-4-04-064590-2", title: "ソードアート・オンライン7", author: "川原礫", publisher: "KADOKAWA", issueYear: "2011", price: "610" },
+                { instanceID: "250328_164807", isbn: "978-4-04-064591-9", title: "ソードアート・オンライン8", author: "川原礫", publisher: "KADOKAWA", issueYear: "2011", price: "630" },
+                { instanceID: "250328_164808", isbn: "978-4-04-064592-6", title: "ソードアート・オンライン9", author: "川原礫", publisher: "KADOKAWA", issueYear: "2012", price: "610" },
+                { instanceID: "250328_164809", isbn: "978-4-04-064593-3", title: "ソードアート・オンライン10", author: "川原礫", publisher: "KADOKAWA", issueYear: "2012", price: "630" }
+            ];
+
+            initialData.forEach(data => {
+                localStorage.setItem(data.instanceID, JSON.stringify({
+                    isbn: data.isbn,
+                    title: data.title,
+                    author: data.author,
+                    publisher: data.publisher,
+                    issueYear: data.issueYear,
+                    price: data.price
+                }));
+            });
+        }
+
+        // ページ読み込み時に初期データを追加
+        window.onload = function() {
+            addInitialData();
+            displayBookData();
+        };
+    </script>
+</body>
+</html>

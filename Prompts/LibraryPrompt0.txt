@@ -1,0 +1,68 @@
+これから、データベースソフトのMicrosoft Accessで作成済みの社内書籍等管理システムをWebアプリ化します。
+
+基本構成としてフロントエンドは　HTML・CSS・Javascript、バックエンドはPython flask、データベースをsqlite3とします。
+
+まず最初に、「トップメニュー」→「管理メニュー」→「書籍登録」と画面遷移し、国立国会図書館サーチAPIを使って
+ISBN番号から書籍情報を取得、「書籍登録」画面に取り込んだ書籍情報及び年月日と時刻から生成した
+InstanceID（後述）を、データベースのテーブル（後述）
+※T00_InstanceIDｓ
+※T01_ISBNs
+
+に書き込んで下さい。また書影取得を行い、出来た場合はフォルダcalligraphyに保存します。
+
+国立国会図書館サーチAPIについては下記リンクをご参照下さい。
+https://ndlsearch.ndl.go.jp/help/api
+
+現行のAccess各画面の写真をフォルダ　LibraryPages　に収納しています。その対応は下記の通りです。
+「トップメニュー」：TopMenu.png
+「管理メニュー」：ControlMenu.png
+「書籍登録」：BookRegister.png
+
+** プロジェクト構成:**
+
+```
+/ (プロジェクトルート)
+|-- Libraries.py             # Flaskアプリケーション本体
+|-- templates/
+|   |-- Libraries.html   # HTML/Jinja2テンプレート
+|- calligraphys/
+|-- Libraries.db         # SQLiteデータベース (自動生成)
+|-- requirements.txt   # 依存パッケージリスト (Flask)
+|-- README.md          # セットアップと実行手順
+|-- PLAN.md            # 開発計画書
+
+データーベースの構成は当初は下記で始めます。
+
+テーブル名：T00_InstanceIDｓ
+	カラム：
+		※'InstanceID' (TEXT, PRIMARY KEY, YYMMDD_HHMMSSの形でデータ登録の年月日と時刻より生成）　書籍現物に付与する固有のID
+		※'ISBN' (TEXT)　～書籍のInternational Standard Book Number
+		※'HitNDLsearch'(boolean)　～　国立国会図書館サーチから取得できた場合Yes、出来なかった場合No
+		※'LocateNow'(TEXT)～　現在の書籍の保管場所
+		※'LocateInit'（TEXT)　～　データ登録時の書籍の保管場所
+		※'CountBorrow'（INTEGER）～貸出回数を記録（更新）
+テーブル名：T01_ISBNs
+	カラム：
+		※'ISBN'(TEXT, PRIMARY KEY)　～書籍のInternational Standard Book Number
+		※’Title'（TEXT）　～書籍名称
+		※'Author' (TEXT)
+		※'Publisher'（TEXT）
+		※'IssueYear'(TEXT) ～　発行年
+		※’Price' （CURRENCY）
+		※'ClassNumber'' ～書籍の分類番号
+		※Calligraphy（Boolean）　～　国立国会図書館サーチ時に書影取得できた場合yes 出来なかった場合No
+テーブル名：T04_Locations
+	カラム：
+		※’Location'(TEXT, PRIMARY KEY)　～図書館の所在地(ビル名-階数-柱番号　等で指定）
+		※'SerialNumber'(TEXT)　～　管理用PCのシリアル
+		※'LibraryName'(TEXT) ～図書館名称（例：よりみち文庫、PORT みなとみらい、PORT 品川）
+		※'AdiminMail'(TEXT)　～管理者（グループ）のメルアド
+		※'CloseTime(TIME)　～　図書館閉館時刻
+		※'DefaultTerm'(DAY) ～　デフォルトの貸出期限日数
+		※'ClassfyTable'(TEXT) ～書籍の分類テーブル名
+		※'MemberOnly'(Boolean)
+		※'Department'（TEXT)
+		※'MonitorType'（TEXT）　～　'internal', 'external', 'extend', 'clone'から選択
+		※'RemindMail'(Boolean)
+		
+ 
