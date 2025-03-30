@@ -107,9 +107,9 @@
         <input type="number" id="price" name="price"><br><br>
 
         <label for="category">書籍分類:</label>
-        <input type="text" id="category" name="category"><br><br> {/* Removed readonly attribute */}
+        <input type="text" id="category" name="category"><br><br>
 
-        <button type="submit" onclick="registerBook(event)">登録</button> {/* Changed type to submit and added event parameter */}
+        <button type="submit" onclick="registerBook(event)">登録</button> 
     </form>
 
     <h2>登録データ一覧</h2>
@@ -123,7 +123,7 @@
                 <th>出版社</th>
                 <th>発行年</th>
                 <th>価格</th>
-                <th>書籍分類</th> {/* Added Category header */}
+                <th>書籍分類</th> 
             </tr>
         </thead>
         <tbody>
@@ -450,6 +450,11 @@
             document.getElementById("issueYear").value = "";
             document.getElementById("price").value = "";
             document.getElementById("category").value = ""; // category もクリア
+            // 書影表示エリアをリセット
+            document.getElementById("bookThumbnail").style.display = "none";
+            document.getElementById("bookThumbnail").src = "";
+            document.getElementById("thumbnailMessage").style.display = "none";
+            document.getElementById("thumbnailMessage").textContent = "";
         }
 
         // ページ読み込み時にデータを表示
@@ -457,29 +462,6 @@
             // addInitialData(); // 初期データ投入はコメントアウト
             displayBookData();
         };
-
-        /* // 初期データを追加 (コメントアウト)
-        function addInitialData() {
-            const initialData = [
-                { instanceID: "250328_164800", isbn: "978-4-04-064584-1", title: "ソードアート・オンライン1", author: "川原礫", publisher: "KADOKAWA", issueYear: "2009", price: "610" },
-                { instanceID: "250328_164801", isbn: "978-4-04-064585-8", title: "ソードアート・オンライン2", author: "川原礫", publisher: "KADOKAWA", issueYear: "2009", price: "630" },
-                // ... (省略) ...
-            ];
-
-            initialData.forEach(data => {
-                // category を追加する場合はここも修正が必要
-                localStorage.setItem(data.instanceID, JSON.stringify({
-                    isbn: data.isbn,
-                    title: data.title,
-                    author: data.author,
-                    publisher: data.publisher,
-                    issueYear: data.issueYear,
-                    price: data.price
-                    // category: data.category // 必要なら追加
-                }));
-            });
-        }
-        */
 
     </script>
 </body>
