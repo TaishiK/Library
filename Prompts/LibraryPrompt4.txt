@@ -1,0 +1,5 @@
+まだ、書籍分類が記録できません。htmlを見ると    103行104行が
+        <label for="category">書籍分類:</label>
+        <input type="text" id="category" name="category" readonly><br><br> {/* Added readonly category field */}
+とあります。category欄がreadonlyなため書き込めないのではないでしょうか？ブラウザ画面でも書籍分類欄はグレー表示され
+他の欄とは見た目が異なります。
