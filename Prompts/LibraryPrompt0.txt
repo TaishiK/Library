@@ -50,7 +50,7 @@ https://ndlsearch.ndl.go.jp/help/api
 		※'IssueYear'(TEXT) ～　発行年
 		※’Price' （CURRENCY）
 		※'ClassNumber'' ～書籍の分類番号
-		※Calligraphy（Boolean）　～　国立国会図書館サーチ時に書影取得できた場合yes 出来なかった場合No
+		※Thumbnail（Boolean）　～　国立国会図書館サーチ時に書影取得できた場合yes 出来なかった場合No
 テーブル名：T04_Locations
 	カラム：
 		※’Location'(TEXT, PRIMARY KEY)　～図書館の所在地(ビル名-階数-柱番号　等で指定）

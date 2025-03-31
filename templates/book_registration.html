@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>書籍データ登録</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+        }
+
+        label {
+            display: inline-block;
+            width: 100px;
+            text-align: right;
+            margin-right: 10px;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 300px;
+            padding: 5px;
+            border: 1px solid #ccc;
+        }
+        /* Readonly fields style - No longer needed for category, but kept for potential future use */
+        input[readonly] {
+            background-color: #eee;
+        }
+
+
+        button[type="button"] { /* Specificity increased */
+            padding: 5px 10px;
+            margin-left: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button[type="submit"] { /* Style for the register button */
+             display: block;
+             width: 100px;
+             margin: 20px auto;
+             padding: 10px;
+             background-color: #4CAF50;
+             color: white;
+             border: none;
+             cursor: pointer;
+        }
+
+
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>書籍データ登録</h1>
+
+    <form id="bookForm">
+        <label for="isbn">ISBN:</label>
+        <input type="text" id="isbn" name="isbn" style="ime-mode: inactive;"> <!-- 初期入力を半角に -->
+        <button type="button" onclick="fetchBookInfo()">書籍情報取得</button>
+        <!-- 書影表示エリア -->
+        <div id="thumbnailContainer" style="margin-top: 10px; text-align: center; min-height: 150px;">
+            <img id="bookThumbnail" src="" alt="書影" style="max-width: 100px; max-height: 150px; display: none; border: 1px solid #ccc;">
+            <p id="thumbnailMessage" style="display: none; margin-top: 5px; font-size: 0.9em; color: #666;"></p>
+        </div>
+        <br><br>
+
+        <label for="title">タイトル:</label>
+        <input type="text" id="title" name="title"><br><br>
+
+        <label for="author">著者:</label>
+        <input type="text" id="author" name="author"><br><br>
+
+        <label for="publisher">出版社:</label>
+        <input type="text" id="publisher" name="publisher" style="ime-mode: active;"><br><br>
+
+        <label for="issueYear">発行年:</label>
+        <input type="text" id="issueYear" name="issueYear"><br><br>
+
+        <label for="price">価格:</label>
+        <input type="number" id="price" name="price"><br><br>
+
+        <label for="category">書籍分類:</label>
+        <input type="text" id="category" name="category"><br><br>
+
+        <!-- API結果保持用 (非表示) -->
+        <input type="hidden" id="hit_ndl" name="hit_ndl" value="0">
+        <input type="hidden" id="thumbnail_exists" name="thumbnail_exists" value="0">
+
+        <button type="submit" onclick="registerBook(event)">登録</button>
+    </form>
+
+    <h2>登録データ一覧</h2>
+    <table id="bookTable">
+        <thead>
+            <tr>
+                <th>InstanceID</th>
+                <th>ISBN</th>
+                <th>タイトル</th>
+                <th>著者</th>
+                <th>出版社</th>
+                <th>発行年</th>
+                <th>価格</th>
+                <th>書籍分類</th> 
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Flaskから渡されたbooksデータを使ってループ処理 -->
+            {% for book in books %}
+            <tr>
+                <td>{{ book.InstanceID }}</td>
+                <td>{{ book.ISBN }}</td>
+                <td>{{ book.Title }}</td>
+                <td>{{ book.Author }}</td>
+                <td>{{ book.Publisher }}</td>
+                <td>{{ book.IssueYear }}</td>
+                <td>{{ book.Price }}</td>
+                <td>{{ book.categoryNumber }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" style="text-align: center;">登録されている書籍はありません。</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <script>
+        // 国立国会図書館サーチAPIから書籍情報を取得する関数
+        async function fetchBookInfo() {
+            const isbn = document.getElementById("isbn").value.replace(/-/g, ''); // ハイフンを除去
+            if (!isbn) {
+                alert("ISBNを入力してください。");
+                return;
+            }
+
+            // API実行前にフォームをクリア（ISBN以外）
+            document.getElementById("title").value = "";
+            document.getElementById("author").value = "";
+            document.getElementById("publisher").value = "";
+            document.getElementById("issueYear").value = "";
+            document.getElementById("price").value = "";
+            document.getElementById("category").value = "";
+
+            // 書影表示エリアをクリア
+            document.getElementById("bookThumbnail").style.display = "none";
+            document.getElementById("bookThumbnail").src = "";
+            document.getElementById("thumbnailMessage").style.display = "none";
+            document.getElementById("thumbnailMessage").textContent = "";
+            // hidden inputの値をリセット
+            document.getElementById("hit_ndl").value = "0";
+            document.getElementById("thumbnail_exists").value = "0";
+
+
+            try {
+                // Flask APIエンドポイントにリクエスト
+                const response = await fetch('/api/fetch_book_info', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ isbn: isbn }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    alert(`書籍情報の取得エラー: ${data.error}`);
+                    return;
+                }
+
+                // フォームに値を設定
+                document.getElementById("title").value = data.title || "";
+                document.getElementById("author").value = data.author || "";
+                document.getElementById("publisher").value = data.publisher || "";
+                document.getElementById("issueYear").value = data.issueYear || "";
+                document.getElementById("category").value = data.category || "";
+                document.getElementById("price").value = data.price || "";
+
+                // hidden inputにAPI結果フラグを設定
+                document.getElementById("hit_ndl").value = data.hit_ndl ? "1" : "0";
+                document.getElementById("thumbnail_exists").value = data.thumbnail_exists ? "1" : "0";
+
+                // --- 書影表示処理 ---
+                const thumbnailImg = document.getElementById("bookThumbnail");
+                const thumbnailMsg = document.getElementById("thumbnailMessage");
+                const thumbnailUrl = data.thumbnail_url; // APIからのURLを使用
+
+                if (data.thumbnail_exists && thumbnailUrl) {
+                    thumbnailImg.onload = () => {
+                        thumbnailImg.style.display = "block";
+                        thumbnailMsg.style.display = "none";
+                        thumbnailMsg.textContent = "";
+                    };
+                    thumbnailImg.onerror = () => { // 念のためonerrorも設定
+                        thumbnailImg.style.display = "none";
+                        thumbnailMsg.style.display = "block";
+                        thumbnailMsg.textContent = "書影の表示に失敗しました。";
+                    };
+                    // 既存の src をクリアしてから新しい URL を設定 (キャッシュ対策)
+                    thumbnailImg.src = "";
+                    thumbnailImg.src = thumbnailUrl;
+                } else {
+                    thumbnailImg.style.display = "none";
+                    thumbnailImg.src = "";
+                    thumbnailMsg.style.display = "block";
+                    thumbnailMsg.textContent = "書影が見つかりません。";
+                }
+                // --- 書影表示処理ここまで ---
+
+                if (!data.hit_ndl) {
+                    alert("NDL Search APIで該当する書籍情報が見つかりませんでした。手動で入力してください。");
+                }
+
+            } catch (error) {
+                console.error("書籍情報の取得に失敗しました:", error);
+                alert("書籍情報の取得中にエラーが発生しました。");
+                // エラー時も書影エリアとhidden inputをリセット
+                document.getElementById("bookThumbnail").style.display = "none";
+                document.getElementById("bookThumbnail").src = "";
+                document.getElementById("thumbnailMessage").style.display = "none";
+                document.getElementById("thumbnailMessage").textContent = "";
+                document.getElementById("hit_ndl").value = "0";
+                document.getElementById("thumbnail_exists").value = "0";
+            }
+        }
+
+        // 書籍データを登録する関数 (バックエンドAPI連携)
+        async function registerBook(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            const isbn = document.getElementById("isbn").value;
+            const title = document.getElementById("title").value;
+            const author = document.getElementById("author").value;
+            const publisher = document.getElementById("publisher").value;
+            const issueYear = document.getElementById("issueYear").value;
+            const price = document.getElementById("price").value;
+            const category = document.getElementById("category").value;
+            // hidden inputからフラグを取得
+            const hit_ndl = document.getElementById("hit_ndl").value === "1";
+            const thumbnail_exists = document.getElementById("thumbnail_exists").value === "1";
+
+
+            // 入力値の検証
+            if (!isbn) {
+                alert("ISBNを入力してください（書籍情報取得ボタンを押すか、手動で入力してください）。");
+                return;
+            }
+             // 価格が入力されていれば数値かチェック
+            if (price && isNaN(parseFloat(price))) { // parseFloatでチェック
+                alert("価格は数値で入力してください。");
+                return;
+            }
+             if (issueYear && (isNaN(parseInt(issueYear)) || issueYear.length !== 4)) { // 発行年が入力されていれば4桁の数値かチェック
+                 alert("発行年は4桁の数値で入力してください。");
+                 return;
+             }
+
+            const bookData = {
+                isbn: isbn,
+                title: title,
+                author: author,
+                publisher: publisher,
+                issueYear: issueYear,
+                price: price ? parseFloat(price) : null, // 数値に変換、空ならnull
+                category: category,
+                hit_ndl: hit_ndl,
+                thumbnail_exists: thumbnail_exists
+            };
+
+            try {
+                // Flask APIエンドポイントにリクエスト
+                const response = await fetch('/api/register_book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(bookData),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert(`登録成功！ InstanceID: ${result.instance_id}`);
+                    clearForm(); // フォームをクリア
+                    window.location.reload(); // ページをリロードして一覧を更新
+                } else {
+                    alert(`登録失敗: ${result.error || '不明なエラー'}`);
+                }
+
+            } catch (error) {
+                console.error("書籍の登録に失敗しました:", error);
+                alert("書籍の登録中にエラーが発生しました。");
+            }
+        }
+
+        // generateInstanceID, saveBookData, displayBookData は不要になったので削除
+
+        // clearForm は残す (hidden inputのリセットも追加)
+        function clearForm() {
+            document.getElementById("isbn").value = "";
+            document.getElementById("title").value = "";
+            document.getElementById("author").value = "";
+            document.getElementById("publisher").value = "";
+            document.getElementById("issueYear").value = "";
+            document.getElementById("price").value = "";
+            document.getElementById("category").value = "";
+            // 書影表示エリアとhidden inputをリセット
+            document.getElementById("bookThumbnail").style.display = "none";
+            document.getElementById("bookThumbnail").src = "";
+            document.getElementById("thumbnailMessage").style.display = "none";
+            document.getElementById("thumbnailMessage").textContent = "";
+            document.getElementById("hit_ndl").value = "0";
+            document.getElementById("thumbnail_exists").value = "0";
+        }
+
+        // window.onload は displayBookData を呼ばなくなったので不要 (一覧はサーバーサイドでレンダリング)
+        // window.onload = function() {
+        // };
+
+    </script>
+</body>
+</html>

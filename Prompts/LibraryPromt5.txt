@@ -1,0 +1,50 @@
+@/book_registration.html
+これからbook_registration.html をpython flaskとsqlite を利用してwebアプリケーション化します。
+/アクセスでbook_registration.htmlを表示し、国立国会図書館サーチAPIで取得した書籍情報を下記の
+※T00_InstanceIDｓ及びT01_ISBNs に記入します。T00のカラムで書籍情報には含まれない項目の入力ロジックは
+次回以降のプロンプトで説明します。今回はカラムの作成のみでお願いします。
+
+
+構成は以下のように修正して下さい。
+/ (プロジェクトルート)
+|-- app.py             # Flaskアプリケーション本体
+|-- templates/
+|   |-- book_registration.html
+|- thumbnails/
+|-- Libraries.db         # SQLiteデータベース (自動生成)
+
+データーベースの構成は当初は下記で始めます。
+
+テーブル名：T00_InstanceIDｓ
+	カラム：
+		※'InstanceID' (TEXT, PRIMARY KEY, YYMMDD_HHMMSSの形でデータ登録の年月日と時刻より生成）　書籍現物に付与する固有のID
+		※'ISBN' (TEXT)　～書籍のInternational Standard Book Number
+		※'HitNDLsearch'(boolean)　～　国立国会図書館サーチから取得できた場合Yes、出来なかった場合No
+		※'LocateNow'(TEXT)～　現在の書籍の保管場所
+		※'LocateInit'（TEXT)　～　データ登録時の書籍の保管場所
+		※'CountBorrow'（INTEGER）～貸出回数を記録（初期値：０、更新）
+テーブル名：T01_ISBNs
+	カラム：
+		※'ISBN'(TEXT, PRIMARY KEY)　～書籍のInternational Standard Book Number
+		※’Title'（TEXT）　～書籍名称
+		※'Author' (TEXT)
+		※'Publisher'（TEXT）
+		※'IssueYear'(TEXT) ～　発行年
+		※’Price' （CURRENCY）
+		※'categoryNumber'' ～書籍の分類番号
+		※Thumbnail（Boolean）　～　国立国会図書館サーチ時に書影取得できた場合yes 出来なかった場合No
+テーブル名：T04_Locations
+	カラム：
+		※’Location'(TEXT, PRIMARY KEY)　～図書館の所在地(ビル名-階数-柱番号　等で指定）
+		※'SerialNumber'(TEXT)　～　管理用PCのシリアル
+		※'LibraryName'(TEXT) ～図書館名称（例：よりみち文庫、PORT みなとみらい、PORT 品川）
+		※'AdiminMail'(TEXT)　～管理者（グループ）のメルアド
+		※'CloseTime(TIME)　～　図書館閉館時刻
+		※'DefaultTerm'(DAY) ～　デフォルトの貸出期限日数
+		※'categoryTable'(TEXT) ～書籍の分類テーブル名
+		※'MemberOnly'(Boolean)
+		※'Department'（TEXT)
+		※'MonitorType'（TEXT）　～　'internal', 'external', 'extend', 'clone'から選択
+		※'RemindMail'(Boolean)
+
+必要なモジュールのセットアップ方法も提示して下さい。
