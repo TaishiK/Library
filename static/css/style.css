@@ -1,0 +1,186 @@
+/* 基本スタイル */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f4f4f4;
+    min-height: 100vh; /* 画面全体の高さを確保 */
+    display: flex;
+    flex-direction: column; /* ヘッダー、メイン、フッターを縦に並べる */
+}
+
+h1 {
+    text-align: center;
+    margin: 20px 0;
+    color: #555;
+}
+
+main {
+    flex-grow: 1; /* メインコンテンツエリアが残りのスペースを埋める */
+    padding: 20px;
+}
+
+/* main_menu.html レイアウト */
+.main-menu-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #e9e9e9;
+    border-bottom: 1px solid #ccc;
+}
+
+.main-menu-header .header-left,
+.main-menu-header .header-right {
+    display: flex;
+    gap: 10px; /* ボタン間のスペース */
+}
+
+.main-menu-footer {
+    display: flex;
+    justify-content: center; /* 中央寄せ */
+    align-items: center;
+    gap: 30px; /* ボタン間のスペース */
+    padding: 20px;
+    margin-top: auto; /* フッターを最下部に固定（mainがflex-growするため） */
+    background-color: #e9e9e9;
+    border-top: 1px solid #ccc;
+}
+
+/* control_menu.html レイアウト */
+.control-menu-grid {
+    display: grid;
+    /* 3列固定、各列は均等幅 */
+    grid-template-columns: repeat(3, 1fr);
+    /* 縦横の隙間を均等に */
+    gap: 15px;
+    max-width: 800px; /* グリッドの最大幅 */
+    margin: 20px auto; /* 中央寄せ */
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* ボタン共通スタイル */
+.btn {
+    display: inline-block; /* または block */
+    padding: 10px 15px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    font-size: 1rem;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.1s ease;
+    min-height: 44px; /* WCAG タッチターゲットサイズ考慮 */
+    min-width: 44px;  /* WCAG タッチターゲットサイズ考慮 */
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+.btn:active {
+    transform: scale(0.98); /* クリック時の視覚フィードバック */
+}
+
+/* アクセシビリティ: フォーカススタイル */
+.btn:focus {
+    outline: 3px solid #0056b3;
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.5); /* より目立つフォーカス */
+}
+/* Firefox用の点線アウトラインを削除 */
+.btn::-moz-focus-inner {
+    border: 0;
+}
+
+
+/* ボタンサイズ別スタイル */
+.btn-small {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    min-height: 32px; /* サイズに応じて調整 */
+    min-width: auto;
+}
+
+.btn-medium {
+    padding: 12px 20px;
+    font-size: 1rem;
+    /* control-menu-grid 内では幅いっぱいに広がるように */
+    width: 100%;
+}
+
+.btn-large {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+}
+
+/* レスポンシブ調整例 (必要に応じて) */
+@media (max-width: 600px) {
+    .main-menu-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .main-menu-header .header-right {
+        align-self: flex-end; /* 右寄せを維持 */
+    }
+    .main-menu-footer {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .control-menu-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* スマホ向け調整 */
+        gap: 10px;
+    }
+    .btn-large {
+        width: 80%; /* スマホで幅を取りすぎないように */
+    }
+}
+
+/* book_registration.html フォームアクションボタン */
+.form-actions {
+    display: flex;
+    justify-content: center; /* ボタンを中央揃え */
+    gap: 15px; /* ボタン間のスペース */
+    margin-top: 20px; /* フォーム要素とのスペース */
+}
+
+/* プライマリボタン (例: 登録) */
+.btn-primary {
+    background-color: #4CAF50; /* 緑色 */
+    color: white;
+}
+.btn-primary:hover {
+    background-color: #45a049;
+}
+
+/* セカンダリボタン (例: 管理メニュー) */
+.btn-secondary {
+    background-color: #6c757d; /* グレー */
+    color: white;
+}
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* <a> タグのボタンも .btn スタイルを適用 */
+a.btn {
+    text-decoration: none; /* 下線を削除 */
+    display: inline-flex; /* テキストを中央揃えにするため */
+    align-items: center;
+    justify-content: center;
+}

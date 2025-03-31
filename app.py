@@ -88,22 +88,26 @@ def init_db():
 # アプリケーション起動時にデータベースを初期化
 init_db()
 
-# ルートURLへのアクセス処理
+# ルートURLへのアクセス処理 - メインメニューを表示
 @app.route('/')
 def index():
+    return render_template('main_menu.html')
+
+@app.route('/control_menu')
+def control_menu():
+    return render_template('control_menu.html')
+
+@app.route('/book_registration')
+def book_registration():
+    # templates/book_registration.html が一覧表示を必要とするため、
+    # 元の index() と同様のデータ取得処理を行う
     db = get_db()
-    # T00_InstanceIDs と T01_ISBNs を結合して書籍リストを取得
-    # T01_ISBNs に存在しないISBNを持つInstanceIDも表示するためLEFT JOINを使用
     query = """
     SELECT
-        i.InstanceID,
-        i.ISBN,
-        COALESCE(b.Title, 'N/A') AS Title,
-        COALESCE(b.Author, 'N/A') AS Author,
-        COALESCE(b.Publisher, 'N/A') AS Publisher,
-        COALESCE(b.IssueYear, 'N/A') AS IssueYear,
-        COALESCE(b.Price, 'N/A') AS Price,
-        COALESCE(b.categoryNumber, 'N/A') AS categoryNumber
+        i.InstanceID, i.ISBN,
+        COALESCE(b.Title, 'N/A') AS Title, COALESCE(b.Author, 'N/A') AS Author,
+        COALESCE(b.Publisher, 'N/A') AS Publisher, COALESCE(b.IssueYear, 'N/A') AS IssueYear,
+        COALESCE(b.Price, 'N/A') AS Price, COALESCE(b.categoryNumber, 'N/A') AS categoryNumber
     FROM T00_InstanceIDs i
     LEFT JOIN T01_ISBNs b ON i.ISBN = b.ISBN
     ORDER BY i.InstanceID DESC;
@@ -216,13 +220,54 @@ def fetch_from_ndl(isbn):
         # 書影有無の確認
         thumbnail_url = f"https://ndlsearch.ndl.go.jp/thumbnail/{isbn}.jpg"
         thumbnail_exists = False
+        thumbnail_save_path = None # 保存パスを初期化
         try:
             thumb_response = requests.head(thumbnail_url, timeout=5)
             if thumb_response.status_code == 200 and 'image' in thumb_response.headers.get('Content-Type', ''):
                  thumbnail_exists = True
-        except requests.exceptions.RequestException:
-            pass # 書影確認エラーは無視
+                 # --- 書影保存処理 ---
+                 try:
+                     # 保存先ディレクトリ (プロジェクトルート直下の thumbnails)
+                     # app.root_path を使うと Flask アプリケーションのルートパスを取得できる
+                     thumbnails_dir = os.path.join(app.root_path, 'thumbnails')
+                     # ディレクトリが存在しない場合は作成
+                     os.makedirs(thumbnails_dir, exist_ok=True)
 
+                     # 保存ファイル名 (ISBN.jpg) - isbn 変数はハイフン除去済み
+                     thumbnail_filename = f"{isbn}.jpg"
+                     thumbnail_save_path = os.path.join(thumbnails_dir, thumbnail_filename)
+
+                     # 画像データをダウンロードして保存 (既に存在しない場合のみ)
+                     if not os.path.exists(thumbnail_save_path):
+                         print(f"Downloading thumbnail for {isbn} to {thumbnail_save_path}")
+                         img_response = requests.get(thumbnail_url, stream=True, timeout=10)
+                         img_response.raise_for_status() # HTTPエラーチェック
+                         with open(thumbnail_save_path, 'wb') as f:
+                             for chunk in img_response.iter_content(1024):
+                                 f.write(chunk)
+                         print(f"Thumbnail saved successfully: {thumbnail_save_path}")
+                     else:
+                         print(f"Thumbnail already exists: {thumbnail_save_path}")
+
+                 except OSError as e:
+                     print(f"Error creating thumbnails directory: {e}")
+                     # ディレクトリ作成失敗時はログのみ出力し、処理は続行 (thumbnail_exists は True のまま)
+                     thumbnail_save_path = None
+                 except requests.exceptions.RequestException as e:
+                     print(f"Error downloading thumbnail image: {e}")
+                     # ダウンロード失敗時もログのみ出力し、処理は続行
+                     thumbnail_save_path = None
+                 except IOError as e:
+                     print(f"Error saving thumbnail image: {e}")
+                     # 保存失敗時もログのみ出力し、処理は続行
+                     thumbnail_save_path = None
+                 # --- 書影保存処理ここまで ---
+
+        except requests.exceptions.RequestException as e:
+            print(f"Warning: Error checking thumbnail existence: {e}") # HEADリクエストのエラーもログ出力
+            pass # 書影確認エラーは無視するがログは出す
+
+        # 返却する辞書 (thumbnail_save_path は含めない)
         return {
             "title": title,
             "author": author,

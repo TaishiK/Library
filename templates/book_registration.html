@@ -48,17 +48,7 @@
             cursor: pointer;
         }
 
-        button[type="submit"] { /* Style for the register button */
-             display: block;
-             width: 100px;
-             margin: 20px auto;
-             padding: 10px;
-             background-color: #4CAF50;
-             color: white;
-             border: none;
-             cursor: pointer;
-        }
-
+        /* button[type="submit"] のスタイルは style.css に移動 */
 
         table {
             width: 80%;
@@ -113,7 +103,10 @@
         <input type="hidden" id="hit_ndl" name="hit_ndl" value="0">
         <input type="hidden" id="thumbnail_exists" name="thumbnail_exists" value="0">
 
-        <button type="submit" onclick="registerBook(event)">登録</button>
+        <div class="form-actions">
+            <a href="/control_menu" class="btn btn-secondary">管理メニュー</a>
+            <button type="submit" onclick="registerBook(event)" class="btn btn-primary">登録</button>
+        </div>
     </form>
 
     <h2>登録データ一覧</h2>
