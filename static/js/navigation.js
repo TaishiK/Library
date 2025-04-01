@@ -55,3 +55,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 });
+
+// --- main_menu.html 用 ---
+const lendingButtonElement = document.getElementById('lendingButton');
+if (lendingButtonElement) {
+    lendingButtonElement.addEventListener('click', () => {
+        // 1. main_menu.html を非表示にする
+        document.body.style.display = 'none';
+
+        // 2. yorimichi_z.exe と yorimichi_z2.exe を実行する
+        fetch('/execute_yorimichi')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert("従業員番号: " + clipboardValue); // クリップボードの値を取得する方法は別途検討
+                } else if (data.status === 'timeout') {
+                    alert("社員証が検出されませんでした。");
+                } else {
+                    alert("エラーが発生しました: " + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('API呼び出しエラー:', error);
+                alert("API呼び出しエラーが発生しました。");
+            })
+            .finally(() => {
+                // 5. main_menu.html を再表示する
+                location.reload();
+            });
+    });
+} else {
+    // console.log('#lendingButton button not found on this page.'); // デバッグ用
+}
