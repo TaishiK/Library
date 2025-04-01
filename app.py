@@ -7,7 +7,8 @@ from datetime import datetime # InstanceID生成用
 
 DATABASE = 'Libraries.db'
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
+
 app.config['DATABASE'] = DATABASE
 
 # データベース接続を取得する関数
