@@ -184,3 +184,40 @@ a.btn {
     align-items: center;
     justify-content: center;
 }
+
+/* 画像のスタイル */
+.center-image {
+    display: block;
+    margin: 0 auto;/* 中央寄せ */
+}
+
+/* ボタンのサイズ変更 */
+.main-menu-footer .btn-large {
+    width: 5.25em; /* 1.5rem * 7 / 2 = 5.25rem */
+    height: 1.75em;
+    font-size: 4.2rem; /* 1.2rem * 7 / 2 = 4.2rem */
+}
+
+/* レスポンシブ調整例 (必要に応じて) */
+@media (max-width: 600px) {
+    .main-menu-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .main-menu-header .header-right {
+        align-self: flex-end; /* 右寄せを維持 */
+    }
+    .main-menu-footer {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .control-menu-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* スマホ向け調整 */
+        gap: 10px;
+    }
+    .btn-large {
+        width: 80%; /* スマホで幅を取りすぎないように */
+        font-size: 3rem;
+    }
+}
