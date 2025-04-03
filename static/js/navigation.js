@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- (任意) その他のボタンに未実装を示すログを追加 ---
     // 例: main_menu.html の他のボタン
-    const otherMainMenuButtons = document.querySelectorAll('.main-menu-header button:not(#gotoControlMenu), .main-menu-footer button');
+    const otherMainMenuButtons = document.querySelectorAll('.main-menu-header button:not(#gotoControlMenu), .main-menu-footer button:not(#lendingButton)');
     otherMainMenuButtons.forEach(button => {
         // 既にイベントリスナーが設定されているボタンは除外 (今回は不要だが念のため)
         if (button.id !== 'gotoControlMenu') {
@@ -63,26 +63,77 @@ if (lendingButtonElement) {
         // 1. main_menu.html を非表示にする
         document.body.style.display = 'none';
 
-        // 2. yorimichi_z.exe と yorimichi_z2.exe を実行する
-        fetch('/execute_yorimichi')
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert("従業員番号: " + clipboardValue); // クリップボードの値を取得する方法は別途検討
-                } else if (data.status === 'timeout') {
-                    alert("社員証が検出されませんでした。");
-                } else {
-                    alert("エラーが発生しました: " + data.message);
+        // 2. NFCプロンプトを表示する
+        const nfcPrompt = document.createElement('img');
+        nfcPrompt.src = '/static/images/IDCardTouchRequest.jpg';
+        nfcPrompt.style.position = 'fixed';
+        nfcPrompt.style.top = '50%';
+        nfcPrompt.style.left = '50%';
+        nfcPrompt.style.transform = 'translate(-50%, -50%)';
+        nfcPrompt.style.maxWidth = '80%';
+        nfcPrompt.style.maxHeight = '80%';
+        nfcPrompt.id = 'nfcPrompt';
+        document.body.appendChild(nfcPrompt);
+
+        // 3. NFC読み取り処理
+        let nfcReadTimeout;
+        const readNFC = () => {
+            // タイムアウト設定
+            nfcReadTimeout = setTimeout(() => {
+                // タイムアウト時の処理
+                alert("社員証が検出されませんでした。");
+                document.body.style.display = 'flex'; // main_menu.html を再表示
+                const prompt = document.getElementById('nfcPrompt');
+                if (prompt) {
+                    prompt.remove();
                 }
-            })
-            .catch(error => {
-                console.error('API呼び出しエラー:', error);
-                alert("API呼び出しエラーが発生しました。");
-            })
-            .finally(() => {
-                // 5. main_menu.html を再表示する
-                location.reload();
-            });
+            }, 20000); // 20秒
+
+            // NFC読み取り処理 (仮実装)
+            // ここに nfcpy を使用した NFC 読み取り処理を実装する
+            // 成功した場合:
+            //   - clearTimeout(nfcReadTimeout);
+            //   - nfcPrompt.remove();
+            //   - 社員番号と氏名をコンソールに出力
+            //   - (今回はQRコードリーダーは表示しない)
+            // 失敗した場合:
+            //   - エラーメッセージを表示
+            //   - main_menu.html を再表示
+
+            // **注意**: nfcpy はブラウザで直接実行できないため、
+            //       サーバーサイドで NFC 読み取り処理を行う必要があります。
+            //       このコードはあくまでクライアントサイドのUI制御の例です。
+
+            // 例: (サーバーサイドからデータを受け取ることを想定)
+            fetch('/read_nfc')
+                .then(response => response.json())
+                .then(data => {
+                    clearTimeout(nfcReadTimeout);
+                    const prompt = document.getElementById('nfcPrompt');
+                    if (prompt) {
+                        prompt.remove();
+                    }
+                    if (data.status === 'success') {
+                        console.log("社員番号: " + data.employee_id);
+                        console.log("氏名: " + data.name);
+                    } else {
+                        alert("NFC読み取りエラー: " + data.message);
+                        document.body.style.display = 'flex'; // main_menu.html を再表示
+                    }
+                })
+                .catch(error => {
+                    clearTimeout(nfcReadTimeout);
+                    console.error('NFC読み取りエラー:', error);
+                    alert("NFC読み取りエラーが発生しました。");
+                    document.body.style.display = 'flex'; // main_menu.html を再表示
+                    const prompt = document.getElementById('nfcPrompt');
+                    if (prompt) {
+                        prompt.remove();
+                    }
+                });
+        };
+
+        readNFC();
     });
 } else {
     // console.log('#lendingButton button not found on this page.'); // デバッグ用

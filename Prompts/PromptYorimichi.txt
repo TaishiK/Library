@@ -2,11 +2,29 @@ main_menu.html画面において、「貸出」ボタンが押された時、
 下記の動作を実行するようプログラムを書き足して下さい。
 
 １．「貸出」ボタン押下げ直後、main_menu.htmlは非表示化
-２．/exes フォルダにあるWindows実行ファイル、yorimichi_z.exeを実行して下さい。
-　　これにより、NFCリーダーPaSoRiが入力待ち（Polling中）になります。
-３．/exes フォルダにあるWindows実行ファイル、yorimichi_z2.exeを実行して下さい。
-   これにより、ユーザーにPaSoRiへの社員証タッチを促す画像が表示されます。
-４．ユーザーが社員証をPaSORiにタッチするとyorimichi_z.exeが社員証から社員番号を
-　　読取り、PCのクリップボードにペーストします。
-５．２０秒間、クリップボードへの値のペーストが無い場合、「社員証が検出されませんでした。」と
-　　メッセージを表示後、yorimichi_z2.exeのプロセスをkillし、main_menu.html を表示して下さい。
+２．/statics/IDCardTouchRequest.jpg を画面中央に表示して下さい。
+　　このjpgファイルはユーザーに社員証をNFCカードリーダーのPaSoRiに
+　　タッチすることを求める文面を内容です。
+３．nfcpy を使ってFelica社員証のしかるべき領域を読取り、10桁の社員番号と桁数任意の半角カナ氏名を取得します。
+      ・上記の「しかるべき領域」を下記の情報より判断して下さい。
+         ①Sony製Felica Libraryを用いて社員番号と半角カナ氏名を取得するC++プログラムにおいては。
+         「社員番号のしかるべき領域」は下記のように変数に格納されています。
+         	unsigned char sys_cd1[2] = { 0xfe, 0x00 };
+	         unsigned char svc_cd1[2] = { 0xcb, 0x51 };
+	         unsigned char blk_lst1[2] = { 0x80, 0x00 };
+         「半角カナ氏名のしかるべき領域」は下記です。
+         	unsigned char sys_cd1[2] = { 0xfe, 0x00 };
+	         unsigned char svc_cd1[2] = { 0xcb, 0x51 };
+	         unsigned char blk_lst1[2] = { 0x80, 0x00 };
+         ②/NFCsamples/Felica_dump.py はFelicaカードの内容を取得するPython３プログラムです。
+         　これにより私の社員証を読み取った結果が、/NFCsamples/mine.txt です。
+         ③私の社員番号は　0000920442 私の半角カナ氏名は　ｸﾉﾘﾀｲｼ　です。
+４．１０桁の社員番号と半角カナ氏名が取得できたら、
+   ①　２．で表示した/static/IDCardTouchRequest.jpgを閉じて下さい。
+   ②　①が済んだら、/statics/ScanQrCode.jpgを中央に配置した　scan_QR.html　を表示して下さい。scan_QR.htmlの
+   　詳細は後で指定します。  
+
+５．２０秒間、社員番号の取得ができない場合、「社員証が検出されませんでした。」と
+　　メッセージを表示後、main_menu.html を表示して下さい。なお、半角カナ氏名は登録されていない場合があります。
+
+現在、PaSoRiはソニー製のドライバーにより駆動しています。必要な別ドライバーがあれば教えて下さい。

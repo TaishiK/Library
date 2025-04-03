@@ -2,6 +2,7 @@
 # virtual env
 venv/
 library/
+Library/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
