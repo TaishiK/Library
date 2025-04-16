@@ -1,0 +1,17 @@
+/NFCsamples/NFCPortlib_sample.htmlはソニーグループが提供しているRC-S300の開発用無償SDKより得られたFelicaカード読み取り用のJavascriptを含むhtmlです。
+このソースコードの100行目がFelicaカードの特定のメモリー場所を読み取るよう指示するコマンドになっていると思います。
+このソースコードを、下記のメモリー場所2か所を読み込み、表示するよう改造して下さい。
+
+１．メモリー場所１：System FE00 (Common Area)のRandom Service 327：read w/o key　0x51CB 領域の先頭行
+２．メモリー場所２：System 800B (unknown)のRandom Service 4: read w/o key  0x010B 領域の2行目
+
+メモリー場所１はC++言語で記述した場合、下記のように３つの変数で指定しました。
+    unsigned char sys_cd1[2] = { 0xfe, 0x00 };
+	unsigned char svc_cd1[2] = { 0xcb, 0x51 };
+	unsigned char blk_lst1[2] = { 0x80, 0x00 };
+メモリー場所１はC++言語で記述した場合、下記のように３つの変数で指定しました。
+	unsigned char sys_cd2[2] = { 0x80, 0x0b };
+	unsigned char svc_cd2[2] = { 0x0b, 0x01 };
+	unsigned char blk_lst2[2] = { 0x80, 0x01 };
+
+また、/NFCsamples/Felica_dump.py で私の社員証を読み取った結果が/NFCsamples/mine.txt です。追加で必要な情報があれば教えて下さい。宜しくお願い致します。
