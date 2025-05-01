@@ -33,8 +33,11 @@ For more information, please refer to <https://unlicense.org>
   <head>
     <meta charset="utf-8">
     <title>Touch IDcard to PaSoRi</title>
+:start_line:37
+-------
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-beta.30/css/uikit.min.css" />
+    <link rel="stylesheet" href="/static/css/scan_idcard.css">
   </head>
   <body>
     <div class="uk-navbar-container uk-margin">
@@ -193,8 +196,30 @@ async function session300(device) {
     const idm = poling_res_f.slice(26,34).map(v => dec2HexString(v));
     const idmStr = idm.join(' ');
     idmMessage.innerText = "Card Type: Felica  カードのIDm: " + idmStr;
+:start_line:197
+-------
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
+    // 返却処理用のAPIにデータを送信する
+    fetch('/api/return_book', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        employee_id: idmStr, // 従業員ID
+        isbn: '9784065369579' // ISBN (仮の値)
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+      alert(data.message); // 返却結果をアラートで表示
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('返却処理に失敗しました。');
+    });
     return;
   }
   // Get employee ID
@@ -229,9 +254,30 @@ async function session300(device) {
     idmMessage.innerText = "Card Type : MIFARE  カードのID: " + idStr;
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
+:start_line:232
+-------
     return;
   }
-
+  // 返却処理用のAPIにデータを送信する
+  fetch('/api/return_book', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      employee_id: idStr, // 従業員ID
+      isbn: '9784065369579' // ISBN (仮の値)
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+    alert(data.message); // 返却結果をアラートで表示
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    alert('返却処理に失敗しました。');
+  });
   idmMessage.style.display = 'none';
   waitingMessage.style.display = 'block';
 }
@@ -328,9 +374,30 @@ async function session380(device) {
     idmMessage.innerText = "Card Type: Felica  カードのIDm: " + idmStr;
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
+:start_line:331
+-------
     return;
   }
-
+   // 返却処理用のAPIにデータを送信する
+   fetch('/api/return_book', {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({
+       employee_id: idmStr, // 従業員ID
+       isbn: '9784065369579' // ISBN (仮の値)
+     })
+   })
+   .then(response => response.json())
+   .then(data => {
+     console.log(data);
+     alert(data.message); // 返却結果をアラートで表示
+   })
+   .catch(error => {
+     console.error('Error:', error);
+     alert('返却処理に失敗しました。');
+   });
   // DEBUG:nfc.clf.rcs380:rcvd SENSF_RES 01000000000000000000000000000000000000
   // DEBUG:nfc.clf:found 212F sensf_res=01000000000000000000000000000000000000
   // 212F sensf_res=01000000000000000000000000000000000000
@@ -392,6 +459,28 @@ async function session380(device) {
     waitingMessage.style.display = 'none';
     return;
   }
+:start_line:395
+-------
+   // 返却処理用のAPIにデータを送信する
+   fetch('/api/return_book', {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json'
+     },
+     body: JSON.stringify({
+       employee_id: idtStr, // 従業員ID
+       isbn: '9784065369579' // ISBN (仮の値)
+     })
+   })
+   .then(response => response.json())
+   .then(data => {
+     console.log(data);
+     alert(data.message); // 返却結果をアラートで表示
+   })
+   .catch(error => {
+     console.error('Error:', error);
+     alert('返却処理に失敗しました。');
+   });
   idmMessage.style.display = 'none';
   waitingMessage.style.display = 'block';
 }

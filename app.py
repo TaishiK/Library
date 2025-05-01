@@ -96,6 +96,10 @@ init_db()
 def index():
     return render_template('main_menu.html')
 
+@app.route('/scan_IDcard.html')
+def scan_idcard():
+    return render_template('scan_IDcard.html')
+
 @app.route('/control_menu')
 def control_menu():
     return render_template('control_menu.html')
@@ -398,81 +402,24 @@ def api_register_book():
         # 今回はシンプルにInstance登録失敗のエラーを返す
         return jsonify({"error": "Failed to register book instance"}), 500
 
-import subprocess
-import os
-import time
-from flask import Flask, jsonify
+@app.route('/api/return_book', methods=['POST'])
+def api_return_book():
+    data = request.get_json()
+    employee_id = data.get('employee_id')
+    isbn = data.get('isbn')
 
-def read_felica():
-    try:
-        clf = nfc.ContactlessFrontend('usb')
-        
-        def connected(tag):
-            if isinstance(tag, nfc.tag.tt3.Type3Tag):
-                try:
-                    # Felica Lite Sのメモリダンプ
-                    dump = tag.dump()
-                    
-                    # 従業員IDとカタカナ氏名の読み取り (C++のコードとFelica Dumpを参照)
-                    # **注意**: 以下のオフセットは `/NFCsamples/mine.txt` の内容に合わせて調整してください
-                    employee_id_block = dump[78]  # Random Service 327の0000ブロック
-                    # katakana_name_block = dump[13] # 例: 14ブロック目 (このファイルには氏名がない)
+    if not employee_id or not isbn:
+        return jsonify({"error": "社員IDとISBNは必須です"}), 400
 
-                    # 従業員ID (10桁) を読み取る
-                    employee_id_bytes = b''.join(employee_id_block[0:8])  # 最初の8バイトを使用
-                    employee_id = int(binascii.hexlify(employee_id_bytes), 16)
-                    employee_id_str = str(employee_id).zfill(10)
+    db = get_db()
 
-                    # カタカナ氏名を読み取る (ファイルにない場合は空文字列を返す)
-                    katakana_name = "" # このファイルには氏名がない
-                    #if katakana_name_block:
-                    #    katakana_name_bytes = b''.join(katakana_name_block)
-                    #    katakana_name = katakana_name_bytes.decode('utf-8', errors='ignore').strip()
+    # TODO: 返却処理のロジックを実装する
+    # 1. 社員IDとISBNを元に、貸出情報を検索する
+    # 2. 貸出情報が存在する場合、返却処理を行う
+    # 3. 貸出情報が存在しない場合、エラーを返す
 
-                    return {
-                        "employee_id": employee_id_str,
-                        "name": katakana_name
-                    }
-                except Exception as e:
-                    print(f"Error reading Felica data: {e}")
-                    return None
-            else:
-                print("Tag is not Type3Tag")
-                return None
-
-        # NFCリーダーに接続してFelicaを読み取る
-        tag = clf.connect(rdwr={'on-connect': connected})
-        if tag:
-            return tag
-        else:
-            return None
-    except Exception as e:
-        print(f"Error connecting to NFC reader: {e}")
-        return None
-    except Exception as e:
-        print(f"Error during NFC operation: {e}")
-        return None
-    finally:
-        try:
-            if 'clf' in locals() and clf:
-                clf.close()
-        except Exception as e:
-            print(f"Error closing NFC connection: {e}")
-
-@app.route('/read_nfc')
-def read_nfc_route():
-    felica_data = read_felica()
-    if felica_data:
-        return jsonify({
-            "status": "success",
-            "employee_id": felica_data["employee_id"],
-            "name": felica_data["name"]
-        })
-    else:
-        return jsonify({
-            "status": "error",
-            "message": "社員証の読み取りに失敗しました。"
-        })
+    # ダミーの返却処理
+    return jsonify({"success": True, "message": f"社員ID: {employee_id}, ISBN: {isbn} の書籍を返却しました (実際には処理は行われていません)"})
 
 if __name__ == '__main__':
     # init_db() # init_dbは起動時に一度だけ実行されれば良い

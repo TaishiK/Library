@@ -1,0 +1,92 @@
+body {
+  font-family: sans-serif;
+  margin: 2rem;
+}
+
+.uk-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.uk-button-large {
+  font-size: 1.2rem;
+  padding: 1rem 2rem;
+}
+
+.uk-alert {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 5px;
+}
+
+.uk-alert-success {
+  background-color: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+.uk-alert-danger {
+  background-color: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+}
+
+.uk-text-center {
+  text-align: center;
+}
+
+.uk-margin {
+  margin-bottom: 1rem;
+}
+
+.uk-width-1-1 {
+  width: 100%;
+}
+
+.uk-text-capitalize {
+  text-transform: capitalize;
+}
+
+.uk-button-default {
+  background-color: #f8f9fa;
+  color: #212529;
+  border-color: #dee2e6;
+}
+
+.uk-button-default:hover {
+  background-color: #e2e6ea;
+  border-color: #d5d9dd;
+}
+
+.uk-spinner {
+  width: 2rem;
+  height: 2rem;
+  display: inline-block;
+  vertical-align: middle;
+  -webkit-animation: uk-spinner-rotate 0.75s linear infinite;
+          animation: uk-spinner-rotate 0.75s linear infinite;
+}
+
+.uk-spinner circle {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3px;
+}
+
+@-webkit-keyframes uk-spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes uk-spinner-rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
