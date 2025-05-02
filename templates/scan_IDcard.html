@@ -32,27 +32,24 @@ For more information, please refer to <https://unlicense.org>
 <html lang="ja">
   <head>
     <meta charset="utf-8">
-    <title>Touch IDcard to PaSoRi</title>
-:start_line:37
--------
+    <title>WebUSBでFeliCaリーダーにかざしたFeliCaのIDmを表示</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/uikit/3.0.0-beta.30/css/uikit.min.css" />
-    <link rel="stylesheet" href="/static/css/scan_idcard.css">
   </head>
   <body>
     <div class="uk-navbar-container uk-margin">
       <div class="uk-container uk-container-expand">
         <div class="uk-navbar">
           <div class="uk-navbar-left">
-            <span class="uk-navbar-item uk-logo">社員証をPaSoRiにタッチして下さい。</span>
+            <span class="uk-navbar-item uk-logo">WebUSBでFeliCa IDmまたは、MIFARE IDを読むテスト</span>
           </div>
         </div>
       </div>
     </div>
     <div class="uk-container">
       <div class="uk-margin">
-        USB接続のFeliCaリーダー経由で社員証の社員番号と半角カナ氏名を取得します。<br>
-        <p class="uk-text-danger">注意：本当にできるかはまだ解りません。</p>
+        USB接続のFeliCaリーダー経由でFeliCaのIDmを読み、表示します。
+        <p class="uk-text-danger">注意：チャージ済みだったり、オートチャージが有効なカードでは絶対に実験しないでください。勝手に決済が発生してお金が無くなっても責任はとれません。</p>
       </div>
       <button id="start" class="uk-button uk-button-large uk-button-default uk-width-1-1 uk-text-capitalize">FeliCaリーダーに接続</button>
       <div id="waiting" class="uk-margin" style="display: none;">
@@ -62,7 +59,7 @@ For more information, please refer to <https://unlicense.org>
               <circle fill="none" stroke="#000" cx="15" cy="15" r="14"></circle>
             </svg>
           </span>
-          PaSoRiに社員証をかざしてください
+          FeliCaリーダーにカードをかざしてください
         </button>
       </div>
       <div id="idm" class="uk-alert uk-alert-success uk-text-center" uk-alert style="display: none;"></div>
@@ -73,7 +70,7 @@ const deviceFilters = [
   {
     vendorId: 0x054c,
     productId: 0x06C1,
-    deviceModel: 380, //RC-S380
+    deviceModel: 380,
   },
   {
     vendorId: 0x054c,
@@ -127,7 +124,7 @@ async function send300(device, data) {
 
   retVal[0] = 0x6b ;            // ヘッダー作成
   retVal[1] = 255 & dataLen ;       // length をリトルエンディアン
-  retVal[2] = dataLen >> 8 & 255 ; 
+  retVal[2] = dataLen >> 8 & 255 ;
   retVal[3] = dataLen >> 16 & 255 ;
   retVal[4] = dataLen >> 24 & 255 ;
   retVal[5] = SLOTNUMBER ;        // タイムスロット番号
@@ -151,7 +148,7 @@ async function receive(device, len) {
     arr.push(data.data.getUint8(i));
     arr_str.push(dec2HexString(data.data.getUint8(i)));
   }
-  console.log("return value = " + arr_str);
+  console.log(arr_str);
   return arr;
 }
 
@@ -163,26 +160,32 @@ async function session300(device) {
   await send300(device, [0xFF, 0x56, 0x00, 0x00]);
   // ['83', '14', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '1', '0', 'ff', 'ff', '4', '1', 'ff', 'ff', '1', '0', 'ff', 'ff', '0', '0', '90', '0']
   await receive(device, len);
+
   // endtransparent
   await send300(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x82, 0x00, 0x00]);
   // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
-  await receive(device, len);  
+  await receive(device, len);
+  
   // startransparent
   await send300(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x81, 0x00, 0x00]);
   // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
   await receive(device, len);
+
   // rf off
   await send300(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x83, 0x00, 0x00]);
   // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
   await receive(device, len);
+
   // rf on
   await send300(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x84, 0x00, 0x00]);
   // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
   await receive(device, len);
+
   // SwitchProtocolTypeF
   await send300(device, [0xff, 0x50, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x03, 0x00, 0x00]);
   // ['C0', '03', '00', '90', '00', '90', '00']
   await receive(device, len);
+
   // ferica poling
   await send300(device, [0xFF, 0x50, 0x00, 0x01, 0x00, 0x00, 0x11, 0x5F, 0x46, 0x04, 0xA0, 0x86, 0x01, 0x00, 0x95, 0x82, 0x00, 0x06, 0x06, 0x00, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00]);
   // poling検出時 *がIDm
@@ -196,43 +199,17 @@ async function session300(device) {
     const idm = poling_res_f.slice(26,34).map(v => dec2HexString(v));
     const idmStr = idm.join(' ');
     idmMessage.innerText = "Card Type: Felica  カードのIDm: " + idmStr;
-:start_line:197
--------
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
-    // 返却処理用のAPIにデータを送信する
-    fetch('/api/return_book', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        employee_id: idmStr, // 従業員ID
-        isbn: '9784065369579' // ISBN (仮の値)
-      })
-    })
-    .then(response => response.json())
-    .then(data => {
-      console.log(data);
-      alert(data.message); // 返却結果をアラートで表示
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      alert('返却処理に失敗しました。');
-    });
     return;
   }
-  // Get employee ID
-  await send300(device, [0xFF, 0xFE, 0x00, 0x01, 0x00, 0x00, 0x11, 0x5F, 0x46, 0x04, 0xA0, 0x86, 0x01, 0x00, 0x95, 0x82, 0x00, 0x06, 0x06, 0x00]);
-  const GID_res_f = await receive(device, len);
-  if (GID_res_f.length == 46) {
-    const GID = GID_res_f.slice(26,34).map(v => dec2HexString(v));
-    const GIDStr = GID.join(' ');
-    console.log("GID = " + GIDStr);
-    return;
-  }
+  // read employeeID
+  await send300(device, [0x6B, 0x25, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0xFF, 0x50, 0x00, 0x01, 0x00, 0x00, 0x1B, 0x5F, 0x46, 0x04, 0xA0, 0x86, 0x01, 0x00, 0x95, 0x82, 0x00, 0x10, 0x10, 0x06, XX, 0x01, 0x8B, 0x1A, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00]);
+  const GID_res_f = await recieve(device, len);
+  console.log("GID_res =" + GID_res_f);
 
-  // SwitchProtocolTypeA---ここからMIFAREカードの場合の処理
+
+  // SwitchProtocolTypeA
   await send300(device, [0xff, 0x50, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03, 0x00]);
   // ['C0', '03', '00', '90', '00', '90', '00']
   await receive(device, len);
@@ -254,30 +231,9 @@ async function session300(device) {
     idmMessage.innerText = "Card Type : MIFARE  カードのID: " + idStr;
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
-:start_line:232
--------
     return;
   }
-  // 返却処理用のAPIにデータを送信する
-  fetch('/api/return_book', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      employee_id: idStr, // 従業員ID
-      isbn: '9784065369579' // ISBN (仮の値)
-    })
-  })
-  .then(response => response.json())
-  .then(data => {
-    console.log(data);
-    alert(data.message); // 返却結果をアラートで表示
-  })
-  .catch(error => {
-    console.error('Error:', error);
-    alert('返却処理に失敗しました。');
-  });
+
   idmMessage.style.display = 'none';
   waitingMessage.style.display = 'block';
 }
@@ -374,30 +330,9 @@ async function session380(device) {
     idmMessage.innerText = "Card Type: Felica  カードのIDm: " + idmStr;
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
-:start_line:331
--------
     return;
   }
-   // 返却処理用のAPIにデータを送信する
-   fetch('/api/return_book', {
-     method: 'POST',
-     headers: {
-       'Content-Type': 'application/json'
-     },
-     body: JSON.stringify({
-       employee_id: idmStr, // 従業員ID
-       isbn: '9784065369579' // ISBN (仮の値)
-     })
-   })
-   .then(response => response.json())
-   .then(data => {
-     console.log(data);
-     alert(data.message); // 返却結果をアラートで表示
-   })
-   .catch(error => {
-     console.error('Error:', error);
-     alert('返却処理に失敗しました。');
-   });
+
   // DEBUG:nfc.clf.rcs380:rcvd SENSF_RES 01000000000000000000000000000000000000
   // DEBUG:nfc.clf:found 212F sensf_res=01000000000000000000000000000000000000
   // 212F sensf_res=01000000000000000000000000000000000000
@@ -459,28 +394,6 @@ async function session380(device) {
     waitingMessage.style.display = 'none';
     return;
   }
-:start_line:395
--------
-   // 返却処理用のAPIにデータを送信する
-   fetch('/api/return_book', {
-     method: 'POST',
-     headers: {
-       'Content-Type': 'application/json'
-     },
-     body: JSON.stringify({
-       employee_id: idtStr, // 従業員ID
-       isbn: '9784065369579' // ISBN (仮の値)
-     })
-   })
-   .then(response => response.json())
-   .then(data => {
-     console.log(data);
-     alert(data.message); // 返却結果をアラートで表示
-   })
-   .catch(error => {
-     console.error('Error:', error);
-     alert('返却処理に失敗しました。');
-   });
   idmMessage.style.display = 'none';
   waitingMessage.style.display = 'block';
 }
@@ -518,7 +431,7 @@ startButton.addEventListener('click', async () => {
     waitingMessage.style.display = 'block';
     do {
       deviceModel == 300 ? await session300(device) : await session380(device);
-      await sleep(10000);
+      await sleep(10000);//Polling を繰り返すタイミング調整msec単位
     } while (true);
   } catch (e) {
     console.log(e);

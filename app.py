@@ -402,16 +402,16 @@ def api_register_book():
         # 今回はシンプルにInstance登録失敗のエラーを返す
         return jsonify({"error": "Failed to register book instance"}), 500
 
-@app.route('/api/return_book', methods=['POST'])
-def api_return_book():
-    data = request.get_json()
-    employee_id = data.get('employee_id')
-    isbn = data.get('isbn')
+#@app.route('/api/return_book', methods=['POST'])
+#def api_return_book():
+#    data = request.get_json()
+#    employee_id = data.get('employee_id')
+#    isbn = data.get('isbn')
 
-    if not employee_id or not isbn:
-        return jsonify({"error": "社員IDとISBNは必須です"}), 400
+#    if not employee_id or not isbn:
+###        return jsonify({"error": "社員IDとISBNは必須です"}), 400
 
-    db = get_db()
+#    db = get_db()
 
     # TODO: 返却処理のロジックを実装する
     # 1. 社員IDとISBNを元に、貸出情報を検索する
@@ -419,7 +419,7 @@ def api_return_book():
     # 3. 貸出情報が存在しない場合、エラーを返す
 
     # ダミーの返却処理
-    return jsonify({"success": True, "message": f"社員ID: {employee_id}, ISBN: {isbn} の書籍を返却しました (実際には処理は行われていません)"})
+#    return jsonify({"success": True, "message": f"社員ID: {employee_id}, ISBN: {isbn} の書籍を返却しました (実際には処理は行われていません)"})
 
 if __name__ == '__main__':
     # init_db() # init_dbは起動時に一度だけ実行されれば良い
