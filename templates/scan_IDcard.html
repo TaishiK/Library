@@ -132,7 +132,7 @@ async function send300(device, data) {
 
   0 != dataLen && retVal.set( argData, 10 ); // コマンド追加
   console.log(">>>>>>>>>>");
-  console.log(Array.from(retVal).map(v => v.toString(16)));
+  console.log("Send = " + Array.from(retVal).map(v => v.toString(16)));
   const out = await device.transferOut(deviceEp.out, retVal);
   await sleep(50);
 }
@@ -148,7 +148,7 @@ async function receive(device, len) {
     arr.push(data.data.getUint8(i));
     arr_str.push(dec2HexString(data.data.getUint8(i)));
   }
-  console.log(arr_str);
+  console.log("returnVal = " + arr_str);
   return arr;
 }
 
@@ -186,7 +186,7 @@ async function session300(device) {
   // ['C0', '03', '00', '90', '00', '90', '00']
   await receive(device, len);
 
-  // ferica poling
+  console.log("ferica poling");
   await send300(device, [0xFF, 0x50, 0x00, 0x01, 0x00, 0x00, 0x11, 0x5F, 0x46, 0x04, 0xA0, 0x86, 0x01, 0x00, 0x95, 0x82, 0x00, 0x06, 0x06, 0x00, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00]);
   // poling検出時 *がIDm
   // ['83', '24', '00', '00', '00', '00', '06', '02', '00', '00']
@@ -197,15 +197,25 @@ async function session300(device) {
   const poling_res_f = await receive(device, len);
   if(poling_res_f.length == 46){
     const idm = poling_res_f.slice(26,34).map(v => dec2HexString(v));
+    console.log("idm = " + idm);
     const idmStr = idm.join(' ');
+    console.log("idmStr = " + idmStr);
     idmMessage.innerText = "Card Type: Felica  カードのIDm: " + idmStr;
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
-    return;
+    //return;
   }
+  console.log("read employeeID");
   // read employeeID
-  await send300(device, [0x6B, 0x25, 0x00, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0xFF, 0x50, 0x00, 0x01, 0x00, 0x00, 0x1B, 0x5F, 0x46, 0x04, 0xA0, 0x86, 0x01, 0x00, 0x95, 0x82, 0x00, 0x10, 0x10, 0x06, XX, 0x01, 0x8B, 0x1A, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00]);
-  const GID_res_f = await recieve(device, len);
+  await send300(device, [0xFF, 0x50, 0x00, 0x01, 0x00, 0x00, 0x1B, 0x5F, 0x46, 0x04, 0xA0, 0x86, 0x01, 0x00, 0x95, 0x82, 0x00, 0x10, 0x10, 0x06, 0x01, 0x2E, 0x50, 0xF2, 0x53, 0x82, 0x1F, 0x4B, 0x01, 0xcb, 0x51, 0x01, 0x80, 0x00, 0x00, 0x00, 0x00]);
+  const GID_res_f = await receive(device, len);
+  const GID = GID_res_f.slice(26,34).map(v => dec2HexString(v));
+  const GID_res = GID_res_f.slice(10,14).map(v => dec2HexString(v));
+  const GID_res_f_str = GID_res.join(' ');
+  const GID_str = GID.join(' ');
+  idmMessage.innerText = "Card Type: Felica  カードのGID: " + GID_str + "  Employee ID: " + GID_res_f_str;
+  idmMessage.style.display = 'block';
+  waitingMessage.style.display = 'none';
   console.log("GID_res =" + GID_res_f);
 
 
@@ -240,7 +250,7 @@ async function session300(device) {
 function get_header_length(header){
   return header[4] << 24 | header[3] << 16 | header[2] << 8 | header[1];
 }
-
+/*
 async function session380(device) {
   // INFO:nfc.clf:searching for reader on path usb:054c:06c3
   // DEBUG:nfc.clf.transport:using libusb-1.0.21
@@ -397,7 +407,7 @@ async function session380(device) {
   idmMessage.style.display = 'none';
   waitingMessage.style.display = 'block';
 }
-
+*/
 startButton.addEventListener('click', async () => {
   let device;
   try {
@@ -431,7 +441,7 @@ startButton.addEventListener('click', async () => {
     waitingMessage.style.display = 'block';
     do {
       deviceModel == 300 ? await session300(device) : await session380(device);
-      await sleep(10000);//Polling を繰り返すタイミング調整msec単位
+      await sleep(15000);//Polling を繰り返すタイミング調整msec単位
     } while (true);
   } catch (e) {
     console.log(e);
