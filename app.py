@@ -100,6 +100,10 @@ def index():
 def scan_idcard():
     return render_template('scan_IDcard.html')
 
+@app.route('/read_IDcard.html')
+def read_idcard():
+    return render_template('read_IDcard.html')
+
 @app.route('/control_menu')
 def control_menu():
     return render_template('control_menu.html')
