@@ -45,8 +45,9 @@
 
 	document.getElementById('FeliCa').addEventListener('click', function () {
 		felica_card();
-        return;
-    });
+		return;
+		});
+
 
 	document.getElementById('MIFARE').addEventListener('click', function () {
 		mifare_card();
@@ -55,22 +56,22 @@
 
 	async function felica_card() {
 		console.log('[Reading a FeliCa Card] Begin');
-
 		let lib = null;
+		let ret = null;
 
 		detectTitle.innerText = '';
 		detectMessage.innerText = '';
 		communicateTitle.innerText = '';
 		communicateMessage.innerText = '';
-
-		try {
+		do {
+			let retVal1 = '';
+		try{
 			/* create NFCPortLib object */
 			lib = new NFCPortLib();
 
 			/* init() */
 			let config = new Configuration(500 /* ackTimeout */, 500 /* receiveTimeout */, true /* autoBaudRate*/, true /* autoDeviceSelect */);
 			await lib.init(config);
-
 			/* open() */
 			await lib.open();
 			console.log('deviceName : ' + lib.deviceName);
@@ -105,12 +106,14 @@
 				communicateTitle.innerText = 'Reading...';
 				console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption1) +
 											   '\nReceive : ' + _array_tohexs(ret1));
-                console.log('ret1 = ' + _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join(''));
+                retVal1 = _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join('');
+				console.log('retVal1 = ' + retVal1);
 				return ret1;
 			}, (error) => {
 				communicateTitle.innerText = 'Read error';
 				throw(error);
 			});
+	
 			let felica_read_without_encryption2 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b,0x01, 1, 0x80,0x01]);//半角カナ氏名ブロック取得成功
             _array_copy(felica_read_without_encryption2, 2, card.idm, 0, card.idm.length);
 			let response2 = await lib.communicateThru(felica_read_without_encryption2, 100, detectOption)
@@ -118,8 +121,11 @@
 				communicateTitle.innerText = 'Reading...';
 				console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption2) +
 											   '\nReceive : ' + _array_tohexs(ret2));
-                console.log('ret2 = ' + _array_slice(hexToShiftJIS(_array_tohexs(ret2)), 12, 10).join(''));
+                let retVal2 = _array_slice(hexToShiftJIS(_array_tohexs(ret2)), 12, 10).join('');
+				console.log('retVal2 = ' + retVal2);
+
 				return ret2;
+
 			}, (error) => {
 				communicateTitle.innerText = 'Read error';
 				throw(error);
@@ -128,8 +134,11 @@
 			/* close() */
 			await lib.close();
 			lib = null;
-
-			console.log('Success');
+			/*if (retVal1.length == 10) {
+				console.log('Success');
+				console.log('[Reading a FeliCa Card] End');
+				break;
+			}*/
 
 		} catch(error) {
 			console.log('Error errorType : ' + error.errorType);
@@ -140,9 +149,15 @@
 				lib = null;
 			}
 		}
+		if(retVal1.length == 10) {
+			console.log('Success');
+			console.log('[Reading a FeliCa Card] End');
+			break;
+		}
+		await sleep(100);
+	} while (true);
+	return;
 
-		console.log('[Reading a FeliCa Card] End');
-		return;
 	}
 
 	async function mifare_card() {
@@ -257,7 +272,9 @@
         }
         return new TextDecoder('Shift-JIS').decode(new Uint8Array(bytes));
     }
-
+	async function sleep(msec) {
+		return new Promise(resolve => setTimeout(resolve, msec));
+	  }
 </script>
 </body>
 </html>
