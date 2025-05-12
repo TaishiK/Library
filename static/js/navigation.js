@@ -55,6 +55,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
 });
+// --- scan_IDcard.html 用 ---
+ const gotoMainMenuButton2 = document.getElementById('gotoMainMenu2');
+ if (gotoMainMenuButton2) {
+  gotoMainMenuButton2.addEventListener('click', () => {
+   console.log('Navigating to /'); // デバッグ用ログ
+   window.location.href = '/';
+  });
+ } else {
+  // console.log('#gotoMainMenu button not found on this page.'); // デバッグ用
+ }
 
 // --- main_menu.html 用 ---
 const lendingButtonElement = document.getElementById('lendingButton');
