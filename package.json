@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "kerberos": "^2.2.2",
+    "ldapjs": "^3.0.7"
+  }
+}
