@@ -3,7 +3,7 @@
 <html>
 <meta http-equiv="content-type" content="text/html; charset=shift_jis">
 <head>
- <title>SDK for NFC Web Client Sample</title>
+ <title>Get Mail Address</title>
  <style>
   .back-button {
    position: absolute;
@@ -19,25 +19,22 @@
 <body>
  <h3>
   <div class="header-title">
-   SDK for NFC Web Client Sample
+   Get mail address from employee card
   </div>
  </h3>
 
-    <div class="mainArea">
-  <div class="button1">
-   <span class="col-1" style="display: inline-block; width: 800px">Reading a FeliCa Card (ICS-E008/10 : Sample 5 Format)</span>
-   <button id="FeliCa">Execute</button>
-  </div>
-  <div class="button2">
-   <span class="col-2" style="display: inline-block; width: 800px">Reading a Mifare Classic Card (with Key A=ALL 0xff) </span>
-   <button id="MIFARE">Execute</button>
-  </div>
-  <br><br>
-  <div class="detect">
-   <div id="detect-title" class="detect-title" style="display: inline;"></div><br>
-   <div id="detect" class="detect-info" style="display: inline;"></div>
-  </div>
-  <br>
+  <div class="mainArea">
+    <!--<div class="button1">
+      <span class="col-1" style="display: inline-block; width: 800px">Reading a FeliCa Card (ICS-E008/10 : Sample 5 Format)</span>
+      <button id="FeliCa">Execute</button>
+    </div>
+
+    <br><br>-->
+    <div class="detect">
+      <div id="detect-title" class="detect-title" style="display: inline;"></div><br>
+      <div id="detect" class="detect-info" style="display: inline;"></div>
+    </div>
+    <br>
   <div class="communicate">
    <div id="communicate-title" class="communicate-title" style="display: inline;"></div><br>
    <div id="communicate" class="communicate-response" style="display: inline;"></div>
@@ -53,15 +50,8 @@
  let communicateTitle = document.getElementById('communicate-title');
  let communicateMessage = document.getElementById('communicate');
 
- document.getElementById('FeliCa').addEventListener('click', function () {
-  felica_card();
-  return;
-  });
-
-
- document.getElementById('MIFARE').addEventListener('click', function () {
-  mifare_card();
-  return;
+ document.addEventListener('DOMContentLoaded', function() {
+   felica_card();
  });
 
  async function felica_card() {
@@ -101,7 +91,7 @@
          '\nSystemCode : ' + _array_tohexs(ret.systemCode) +
          '\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
     }
-    detectMessage.innerText = 'IDm : ' + _array_tohexs(ret.idm);
+    //detectMessage.innerText = 'IDm : ' + _array_tohexs(ret.idm);
     return ret;
    }, (error) => {
     detectTitle.innerText = 'Card is not detected';
@@ -119,7 +109,6 @@
                 retVal1 = _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join('');
     console.log('retVal1 = ' + retVal1);
     return ret1;
-   }, (error) => {
     communicateTitle.innerText = 'Read error';
     throw(error);
    });
@@ -170,74 +159,8 @@
 
  }
 
- async function mifare_card() {
-  console.log('[Reading a Mifare Classic Card] Begin');
-  let lib = null;
-  detectTitle.innerText = '';
-  detectMessage.innerText = '';
-  communicateTitle.innerText = '';
-  communicateMessage.innerText = '';
 
-  try {
-   /* create NFCPortLib object */
-   lib = new NFCPortLib();
-   /* init() */
-   let config = new Configuration(500 /* ackTimeout */, 500 /* receiveTimeout */, true /* autoBaudRate*/, true /* autoDeviceSelect */);
-   await lib.init(config);
-   /* open() */
-   await lib.open();
-   console.log('deviceName : ' + lib.deviceName);
-   /* detectCard(TypeA Card) */
-   let card = await lib.detectCard('iso14443-3A')
-   .then(ret => {
-    detectTitle.innerText = 'Card is detected';
-    console.log('UID : ' + _array_tohexs(ret.uid) +
-      '\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
-    detectMessage.innerText = 'UID : ' + _array_tohexs(ret.uid);
-    return ret;
-   }, (error) => {
-    detectTitle.innerText = 'Card is not detected';
-    throw(error);
-   });
-   /* communicateThru(Authentication) */
-   let keyType = 'KeyA';
-   let key = new Uint8Array([0xff,0xff,0xff,0xff,0xff,0xff]);
-   let blockNumber = 8;
-   let communicationOption = new CommunicationOption(true, key, keyType, blockNumber, card.uid);
-   await lib.communicateThru(null, 0, communicationOption)
-   .then(ret => {
-    communicateTitle.innerText = 'Reading...\nAuthentication : Success';
-    return ret;
-   }, (error) => {
-    communicateTitle.innerText = 'Reading...\nAuthentication : Failed';
-    throw(error);
-   });
-   /* communicateThru(Read Binary) */
-   let read_binary = new Uint8Array([0x30, blockNumber]);
-   let response = await lib.communicateThru(read_binary, 100)
-   .then(ret => {
-    communicateMessage.innerText = 'Send    : ' + _array_tohexs(read_binary) +
-                 '\nReceive : ' + _array_tohexs(ret);
-    return ret;
-   }, (error) => {
-    communicateTitle.innerText = 'Read error';
-    throw(error);
-   });
-   /* close() */
-   await lib.close();
-   lib = null;
-   console.log('Success');
-  } catch(error) {
-   console.log('Error errorType : ' + error.errorType);
-   console.log('      message : ' + error.message);
-   if (lib != null) {
-    await lib.close();
-    lib = null;
-   }
-  }
-  console.log('[Reading a Mifare Classic Card] End');
-  return;
- }
+
  function _def_val(param, def){
   return (param === undefined) ? def : param;
  }

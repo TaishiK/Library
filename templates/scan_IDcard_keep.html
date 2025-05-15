@@ -1,263 +1,278 @@
-//Based on Sony Corporation official sample code https://www.felica-support.sony.biz/sdk/ICS-DCW1PC/download/package/NFCPortLib_sample.html
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
-"http://www.w3.org/TR/html4/loose.dtd">
+ "http://www.w3.org/TR/html4/loose.dtd">
 <html>
 <meta http-equiv="content-type" content="text/html; charset=shift_jis">
 <head>
-	<title>SDK for NFC Web Client Sample</title>
+ <title>Get Mail Address</title>
+ <style>
+  .back-button {
+   position: absolute;
+   bottom: 40px;
+   left: 40px;
+  }
+ </style>
 </head>
 <body>
-	<h3>
-		<div class="header-title">
-			SDK for NFC Web Client Sample
-		</div>
-	</h3>
+    <button type="button" id="gotoMainMenu2" class="btn btn-small back-button">戻る</button>
+    <script src="/static/js/navigation.js" defer></script>
+</body>
+<body>
+ <h3>
+  <div class="header-title">
+   Get mail address from employee card
+  </div>
+ </h3>
 
-    <div class="mainArea">
-		<div class="button1">
-			<span class="col-1" style="display: inline-block; width: 800px">Reading a FeliCa Card (ICS-E008/10 : Sample 5 Format)</span>
-			<button id="FeliCa">Execute</button>
-		</div>
-		<div class="button2">
-			<span class="col-2" style="display: inline-block; width: 800px">Reading a Mifare Classic Card (with Key A=ALL 0xff) </span>
-			<button id="MIFARE">Execute</button>
-		</div>
-		<br><br>
-		<div class="detect">
-			<div id="detect-title" class="detect-title" style="display: inline;"></div><br>
-			<div id="detect" class="detect-info" style="display: inline;"></div>
-		</div>
-		<br>
-		<div class="communicate">
-			<div id="communicate-title" class="communicate-title" style="display: inline;"></div><br>
-			<div id="communicate" class="communicate-response" style="display: inline;"></div>
-		</div>
-	</div>
+  <div class="mainArea">
+    <!--<div class="button1">
+      <span class="col-1" style="display: inline-block; width: 800px">Reading a FeliCa Card (ICS-E008/10 : Sample 5 Format)</span>
+      <button id="FeliCa">Execute</button>
+    </div>
+    <div class="button2">
+      <span class="col-2" style="display: inline-block; width: 800px">Reading a Mifare Classic Card (with Key A=ALL 0xff) </span>
+      <button id="MIFARE">Execute</button>
+    </div>
+    <br><br>-->
+    <div class="detect">
+      <div id="detect-title" class="detect-title" style="display: inline;"></div><br>
+      <div id="detect" class="detect-info" style="display: inline;"></div>
+    </div>
+    <br>
+  <div class="communicate">
+   <div id="communicate-title" class="communicate-title" style="display: inline;"></div><br>
+   <div id="communicate" class="communicate-response" style="display: inline;"></div>
+  </div>
+ </div>
 
 
 <script type='module'>
-	import {NFCPortLib, NFCPortError, Configuration, DetectionOption, CommunicationOption, TargetCard} from 'https://cdn.felica-support.sony.biz/webclient/trial/NFCPortLib.js';
+ import {NFCPortLib, NFCPortError, Configuration, DetectionOption, CommunicationOption, TargetCard} from 'https://cdn.felica-support.sony.biz/webclient/trial/NFCPortLib.js';
 
-	let detectTitle = document.getElementById('detect-title');
-	let detectMessage = document.getElementById('detect');
-	let communicateTitle = document.getElementById('communicate-title');
-	let communicateMessage = document.getElementById('communicate');
+ let detectTitle = document.getElementById('detect-title');
+ let detectMessage = document.getElementById('detect');
+ let communicateTitle = document.getElementById('communicate-title');
+ let communicateMessage = document.getElementById('communicate');
 
-	document.getElementById('FeliCa').addEventListener('click', function () {
-		felica_card();
-		return;
-		});
+ document.getElementById('FeliCa').addEventListener('click', function () {
+  felica_card();
+  return;
+  });
 
 
-	document.getElementById('MIFARE').addEventListener('click', function () {
-		mifare_card();
-		return;
-	});
+ document.getElementById('MIFARE').addEventListener('click', function () {
+  mifare_card();
+  return;
+ });
 
-	async function felica_card() {
-		console.log('[Reading a FeliCa Card] Begin');
-		let lib = null;
-		let ret = null;
+ async function felica_card() {
+  console.log('[Reading a FeliCa Card] Begin');
+  let lib = null;
+  let ret = null;
 
-		detectTitle.innerText = '';
-		detectMessage.innerText = '';
-		communicateTitle.innerText = '';
-		communicateMessage.innerText = '';
-		do {
-			let retVal1 = '';
-		try{
-			/* create NFCPortLib object */
-			lib = new NFCPortLib();
+  detectTitle.innerText = '';
+  detectMessage.innerText = '';
+  communicateTitle.innerText = '';
+  communicateMessage.innerText = '';
+  do {
+   let retVal1 = '';
+  try{
+   /* create NFCPortLib object */
+   lib = new NFCPortLib();
 
-			/* init() */
-			let config = new Configuration(500 /* ackTimeout */, 500 /* receiveTimeout */, true /* autoBaudRate*/, true /* autoDeviceSelect */);
-			await lib.init(config);
-			/* open() */
-			await lib.open();
-			console.log('deviceName : ' + lib.deviceName);
+   /* init() */
+   let config = new Configuration(500 /* ackTimeout */, 500 /* receiveTimeout */, true /* autoBaudRate*/, true /* autoDeviceSelect */);
+   await lib.init(config);
+   /* open() */
+   await lib.open();
+   console.log('deviceName : ' + lib.deviceName);
 
-			/* detectCard(FeliCa Card) */
-			let detectOption = new DetectionOption(new Uint8Array([0xff, 0xff]), 0, true, false, null);
-			let card = await lib.detectCard('iso18092', detectOption)
-			.then(ret => {
-				detectTitle.innerText = 'Card is detected';
-				if (ret.systemCode == null) {
-					console.log('IDm : ' + _array_tohexs(ret.idm) +
-								'\nPMm : ' + _array_tohexs(ret.pmm) +
-								'\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
-				} else {
-					console.log('IDm : ' + _array_tohexs(ret.idm) +
-								'\nPMm : ' + _array_tohexs(ret.pmm) +
-								'\nSystemCode : ' + _array_tohexs(ret.systemCode) +
-								'\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
-				}
-				detectMessage.innerText = 'IDm : ' + _array_tohexs(ret.idm);
-				return ret;
-			}, (error) => {
-				detectTitle.innerText = 'Card is not detected';
-				throw(error);
-			});
+   /* detectCard(FeliCa Card) */
+   let detectOption = new DetectionOption(new Uint8Array([0xff, 0xff]), 0, true, false, null);
+   let card = await lib.detectCard('iso18092', detectOption)
+   .then(ret => {
+    detectTitle.innerText = 'Card is detected';
+    if (ret.systemCode == null) {
+     console.log('IDm : ' + _array_tohexs(ret.idm) +
+         '\nPMm : ' + _array_tohexs(ret.pmm) +
+         '\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
+    } else {
+     console.log('IDm : ' + _array_tohexs(ret.idm) +
+         '\nPMm : ' + _array_tohexs(ret.pmm) +
+         '\nSystemCode : ' + _array_tohexs(ret.systemCode) +
+         '\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
+    }
+    detectMessage.innerText = 'IDm : ' + _array_tohexs(ret.idm);
+    return ret;
+   }, (error) => {
+    detectTitle.innerText = 'Card is not detected';
+    throw(error);
+   });
 
-			/* communicateThru(Read Block) */
-			let felica_read_without_encryption1 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b, 0x02, 1, 0x80,0x00]); //社員番号ブロック取得成功
+   /* communicateThru(Read Block) */
+   let felica_read_without_encryption1 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b, 0x02, 1, 0x80,0x00]); //社員番号ブロック取得成功
             _array_copy(felica_read_without_encryption1, 2, card.idm, 0, card.idm.length);
-			let response1 = await lib.communicateThru(felica_read_without_encryption1, 100, detectOption)
-			.then(ret1 => {
-				communicateTitle.innerText = 'Reading...';
-				console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption1) +
-											   '\nReceive : ' + _array_tohexs(ret1));
+   let response1 = await lib.communicateThru(felica_read_without_encryption1, 100, detectOption)
+   .then(ret1 => {
+    communicateTitle.innerText = 'Reading...';
+    console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption1) +
+                 '\nReceive : ' + _array_tohexs(ret1));
                 retVal1 = _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join('');
-				console.log('retVal1 = ' + retVal1);
-				return ret1;
-			}, (error) => {
-				communicateTitle.innerText = 'Read error';
-				throw(error);
-			});
-	
-			let felica_read_without_encryption2 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b,0x01, 1, 0x80,0x01]);//半角カナ氏名ブロック取得成功
+    console.log('retVal1 = ' + retVal1);
+    return ret1;
+   }, (error) => {
+    communicateTitle.innerText = 'Read error';
+    throw(error);
+   });
+ 
+   let felica_read_without_encryption2 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b,0x01, 1, 0x80,0x01]);//半角カナ氏名ブロック取得成功
             _array_copy(felica_read_without_encryption2, 2, card.idm, 0, card.idm.length);
-			let response2 = await lib.communicateThru(felica_read_without_encryption2, 100, detectOption)
-			.then(ret2 => {
-				communicateTitle.innerText = 'Reading...';
-				console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption2) +
-											   '\nReceive : ' + _array_tohexs(ret2));
+   let response2 = await lib.communicateThru(felica_read_without_encryption2, 100, detectOption)
+   .then(ret2 => {
+    communicateTitle.innerText = 'Reading...';
+    console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption2) +
+                 '\nReceive : ' + _array_tohexs(ret2));
                 let retVal2 = _array_slice(hexToShiftJIS(_array_tohexs(ret2)), 12, 10).join('');
-				console.log('retVal2 = ' + retVal2);
+    console.log('retVal2 = ' + retVal2);
 
-				return ret2;
+    return ret2;
 
-			}, (error) => {
-				communicateTitle.innerText = 'Read error';
-				throw(error);
-			});
+   }, (error) => {
+    communicateTitle.innerText = 'Read error';
+    throw(error);
+   });
 
-			/* close() */
-			await lib.close();
-			lib = null;
+   /* close() */
+   await lib.close();
+   lib = null;
+   /*if (retVal1.length == 10) {
+    console.log('Success');
+    console.log('[Reading a FeliCa Card] End');
+    break;
+   }*/
 
-		} catch(error) {
-			console.log('Error errorType : ' + error.errorType);
-			console.log('      message : ' + error.message);
+  } catch(error) {
+   console.log('Error errorType : ' + error.errorType);
+   console.log('      message : ' + error.message);
 
-			if (lib != null) {
-				await lib.close();
-				lib = null;
-			}
-		}
-		if(retVal1.length == 10) {
-			console.log('Success');
-			console.log('[Reading a FeliCa Card] End');
-			break;
-		}
-		await sleep(100);
-	} while (true);
-	return;
+   if (lib != null) {
+    await lib.close();
+    lib = null;
+   }
+  }
+  if(retVal1.length == 10) {
+   console.log('Success');
+   console.log('[Reading a FeliCa Card] End');
+   break;
+  }
+  await sleep(100);
+ } while (true);
+ return;
 
-	}
+ }
 
-	async function mifare_card() {
-		console.log('[Reading a Mifare Classic Card] Begin');
-		let lib = null;
-		detectTitle.innerText = '';
-		detectMessage.innerText = '';
-		communicateTitle.innerText = '';
-		communicateMessage.innerText = '';
+ async function mifare_card() {
+  console.log('[Reading a Mifare Classic Card] Begin');
+  let lib = null;
+  detectTitle.innerText = '';
+  detectMessage.innerText = '';
+  communicateTitle.innerText = '';
+  communicateMessage.innerText = '';
 
-		try {
-			/* create NFCPortLib object */
-			lib = new NFCPortLib();
-			/* init() */
-			let config = new Configuration(500 /* ackTimeout */, 500 /* receiveTimeout */, true /* autoBaudRate*/, true /* autoDeviceSelect */);
-			await lib.init(config);
-			/* open() */
-			await lib.open();
-			console.log('deviceName : ' + lib.deviceName);
-			/* detectCard(TypeA Card) */
-			let card = await lib.detectCard('iso14443-3A')
-			.then(ret => {
-				detectTitle.innerText = 'Card is detected';
-				console.log('UID : ' + _array_tohexs(ret.uid) +
-							'\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
-				detectMessage.innerText = 'UID : ' + _array_tohexs(ret.uid);
-				return ret;
-			}, (error) => {
-				detectTitle.innerText = 'Card is not detected';
-				throw(error);
-			});
-			/* communicateThru(Authentication) */
-			let keyType = 'KeyA';
-			let key = new Uint8Array([0xff,0xff,0xff,0xff,0xff,0xff]);
-			let blockNumber = 8;
-			let communicationOption = new CommunicationOption(true, key, keyType, blockNumber, card.uid);
-			await lib.communicateThru(null, 0, communicationOption)
-			.then(ret => {
-				communicateTitle.innerText = 'Reading...\nAuthentication : Success';
-				return ret;
-			}, (error) => {
-				communicateTitle.innerText = 'Reading...\nAuthentication : Failed';
-				throw(error);
-			});
-			/* communicateThru(Read Binary) */
-			let read_binary = new Uint8Array([0x30, blockNumber]);
-			let response = await lib.communicateThru(read_binary, 100)
-			.then(ret => {
-				communicateMessage.innerText = 'Send    : ' + _array_tohexs(read_binary) +
-											   '\nReceive : ' + _array_tohexs(ret);
-				return ret;
-			}, (error) => {
-				communicateTitle.innerText = 'Read error';
-				throw(error);
-			});
-			/* close() */
-			await lib.close();
-			lib = null;
-			console.log('Success');
-		} catch(error) {
-			console.log('Error errorType : ' + error.errorType);
-			console.log('      message : ' + error.message);
-			if (lib != null) {
-				await lib.close();
-				lib = null;
-			}
-		}
-		console.log('[Reading a Mifare Classic Card] End');
-		return;
-	}
-	function _def_val(param, def){
-		return (param === undefined) ? def : param;
-	}
-	function _array_slice(array, offset, length){
-		let result;
-		length = _def_val(length, array.length - offset);
-		result = [];
-		_array_copy(result, 0, array, offset, length);
-		return result;
-	}
-	function _bytes2hexs(bytes, sep) {
-		let str;
-		sep = _def_val(sep, ' ');
-		return bytes.map(function(byte) {
-			str = byte.toString(16);
-			return byte < 0x10 ? '0'+str : str;
-		}).join(sep).toUpperCase();
-	}
-	function _array_tohexs(array, offset, length){
-		let temp;
-		offset = _def_val(offset, 0);
-		length = _def_val(length, array.length - offset);
-		temp = _array_slice(array, offset, length );
-		return _bytes2hexs(temp, '');
-	}
-	function _array_copy(dest, dest_offset, src, src_offset, length){
-		let idx;
-		src_offset = _def_val(src_offset, 0);
-		length = _def_val(length, src.length);
+  try {
+   /* create NFCPortLib object */
+   lib = new NFCPortLib();
+   /* init() */
+   let config = new Configuration(500 /* ackTimeout */, 500 /* receiveTimeout */, true /* autoBaudRate*/, true /* autoDeviceSelect */);
+   await lib.init(config);
+   /* open() */
+   await lib.open();
+   console.log('deviceName : ' + lib.deviceName);
+   /* detectCard(TypeA Card) */
+   let card = await lib.detectCard('iso14443-3A')
+   .then(ret => {
+    detectTitle.innerText = 'Card is detected';
+    console.log('UID : ' + _array_tohexs(ret.uid) +
+      '\ntargetCardBaudRate : ' + lib.targetCardBaudRate + 'kbps');
+    detectMessage.innerText = 'UID : ' + _array_tohexs(ret.uid);
+    return ret;
+   }, (error) => {
+    detectTitle.innerText = 'Card is not detected';
+    throw(error);
+   });
+   /* communicateThru(Authentication) */
+   let keyType = 'KeyA';
+   let key = new Uint8Array([0xff,0xff,0xff,0xff,0xff,0xff]);
+   let blockNumber = 8;
+   let communicationOption = new CommunicationOption(true, key, keyType, blockNumber, card.uid);
+   await lib.communicateThru(null, 0, communicationOption)
+   .then(ret => {
+    communicateTitle.innerText = 'Reading...\nAuthentication : Success';
+    return ret;
+   }, (error) => {
+    communicateTitle.innerText = 'Reading...\nAuthentication : Failed';
+    throw(error);
+   });
+   /* communicateThru(Read Binary) */
+   let read_binary = new Uint8Array([0x30, blockNumber]);
+   let response = await lib.communicateThru(read_binary, 100)
+   .then(ret => {
+    communicateMessage.innerText = 'Send    : ' + _array_tohexs(read_binary) +
+                 '\nReceive : ' + _array_tohexs(ret);
+    return ret;
+   }, (error) => {
+    communicateTitle.innerText = 'Read error';
+    throw(error);
+   });
+   /* close() */
+   await lib.close();
+   lib = null;
+   console.log('Success');
+  } catch(error) {
+   console.log('Error errorType : ' + error.errorType);
+   console.log('      message : ' + error.message);
+   if (lib != null) {
+    await lib.close();
+    lib = null;
+   }
+  }
+  console.log('[Reading a Mifare Classic Card] End');
+  return;
+ }
+ function _def_val(param, def){
+  return (param === undefined) ? def : param;
+ }
+ function _array_slice(array, offset, length){
+  let result;
+  length = _def_val(length, array.length - offset);
+  result = [];
+  _array_copy(result, 0, array, offset, length);
+  return result;
+ }
+ function _bytes2hexs(bytes, sep) {
+  let str;
+  sep = _def_val(sep, ' ');
+  return bytes.map(function(byte) {
+   str = byte.toString(16);
+   return byte < 0x10 ? '0'+str : str;
+  }).join(sep).toUpperCase();
+ }
+ function _array_tohexs(array, offset, length){
+  let temp;
+  offset = _def_val(offset, 0);
+  length = _def_val(length, array.length - offset);
+  temp = _array_slice(array, offset, length );
+  return _bytes2hexs(temp, '');
+ }
+ function _array_copy(dest, dest_offset, src, src_offset, length){
+  let idx;
+  src_offset = _def_val(src_offset, 0);
+  length = _def_val(length, src.length);
 
-		for (idx = 0; idx < length; idx++) {
-			dest[dest_offset + idx] = src[src_offset + idx];
-		}
-		return dest;
-	}
+  for (idx = 0; idx < length; idx++) {
+   dest[dest_offset + idx] = src[src_offset + idx];
+  }
+  return dest;
+ }
 
     function hexToShiftJIS(hexString) {
         let bytes = [];
@@ -267,9 +282,10 @@
         }
         return new TextDecoder('Shift-JIS').decode(new Uint8Array(bytes));
     }
-	async function sleep(msec) {
-		return new Promise(resolve => setTimeout(resolve, msec));
-	  }
+ async function sleep(msec) {
+  return new Promise(resolve => setTimeout(resolve, msec));
+   }
 </script>
+
 </body>
 </html>
