@@ -64,7 +64,8 @@
   communicateTitle.innerText = '';
   communicateMessage.innerText = '';
   do {
-   let retVal1 = '';
+    let GID = '';
+    let kanaName = '';
   try{
    /* create NFCPortLib object */
    lib = new NFCPortLib();
@@ -103,41 +104,38 @@
             _array_copy(felica_read_without_encryption1, 2, card.idm, 0, card.idm.length);
    let response1 = await lib.communicateThru(felica_read_without_encryption1, 100, detectOption)
    .then(ret1 => {
-    communicateTitle.innerText = 'Reading...';
-    console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption1) +
+    //communicateTitle.innerText = 'Reading...';
+    console.log(/*communicateMessage.innerText =*/ 'Send    : ' + _array_tohexs(felica_read_without_encryption1) +
                  '\nReceive : ' + _array_tohexs(ret1));
-                retVal1 = _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join('');
-    console.log('retVal1 = ' + retVal1);
-    return ret1;
-    communicateTitle.innerText = 'Read error';
-    throw(error);
+    GID = _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join('');
+    console.log('GID = ' + GID);
+    communicateTitle.innerText = 'GID : ' + GID;
+    return GID;
+    }, (error) => {
+      communicateTitle.innerText = 'Read error';
+      throw(error);
    });
  
    let felica_read_without_encryption2 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b,0x01, 1, 0x80,0x01]);//半角カナ氏名ブロック取得成功
             _array_copy(felica_read_without_encryption2, 2, card.idm, 0, card.idm.length);
    let response2 = await lib.communicateThru(felica_read_without_encryption2, 100, detectOption)
    .then(ret2 => {
-    communicateTitle.innerText = 'Reading...';
-    console.log(communicateMessage.innerText = 'Send    : ' + _array_tohexs(felica_read_without_encryption2) +
+    //communicateTitle.innerText = 'Reading...';
+    console.log(/*communicateMessage.innerText = */'Send    : ' + _array_tohexs(felica_read_without_encryption2) +
                  '\nReceive : ' + _array_tohexs(ret2));
-                let retVal2 = _array_slice(hexToShiftJIS(_array_tohexs(ret2)), 12, 10).join('');
-    console.log('retVal2 = ' + retVal2);
-
+    kanaName = _array_slice(hexToShiftJIS(_array_tohexs(ret2)), 12, 10).join('');
+    console.log('kanaName = ' + kanaName);
+    communicateMessage.innerText = 'kanaName : ' + kanaName;
     return ret2;
 
    }, (error) => {
-    communicateTitle.innerText = 'Read error';
-    throw(error);
+      communicateTitle.innerText = 'Read error';
+      throw(error);
    });
 
    /* close() */
    await lib.close();
    lib = null;
-   /*if (retVal1.length == 10) {
-    console.log('Success');
-    console.log('[Reading a FeliCa Card] End');
-    break;
-   }*/
 
   } catch(error) {
    console.log('Error errorType : ' + error.errorType);
@@ -148,7 +146,7 @@
     lib = null;
    }
   }
-  if(retVal1.length == 10) {
+  if(GID.length == 10) {
    console.log('Success');
    console.log('[Reading a FeliCa Card] End');
    break;
