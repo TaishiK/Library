@@ -41,6 +41,7 @@
   </div>
  </div>
 
+<img src="/static/images/IDCardTouchRequest.jpg" alt="ID Card Touch Request" class="centered-image">
 
 <script type='module'>
  import {NFCPortLib, NFCPortError, Configuration, DetectionOption, CommunicationOption, TargetCard} from 'https://cdn.felica-support.sony.biz/webclient/trial/NFCPortLib.js';
@@ -58,15 +59,32 @@
   console.log('[Reading a FeliCa Card] Begin');
   let lib = null;
   let ret = null;
-
   detectTitle.innerText = '';
   detectMessage.innerText = '';
   communicateTitle.innerText = '';
   communicateMessage.innerText = '';
+
+  const startTime = Date.now(); // 開始時刻を取得
+
   do {
     let GID = '';
     let kanaName = '';
-  try{
+
+    // タイムアウト判定 (20秒 = 20000ミリ秒)
+    if (Date.now() - startTime > 20000) {
+      console.log('Timeout: Card not detected within 20 seconds.');
+      detectTitle.innerText = '社員証が検出されませんでした。';
+      // OKボタンを表示
+      const okButton = document.createElement('button');
+      okButton.innerText = 'OK';
+      okButton.onclick = function() {
+        window.location.href = '/'; // メインメニューへ遷移
+      };
+      detectMessage.appendChild(okButton);
+      break; // ループを終了
+    }
+
+    try{
    /* create NFCPortLib object */
    lib = new NFCPortLib();
 

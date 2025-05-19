@@ -1,6 +1,12 @@
 body {
   font-family: sans-serif;
-  margin: 2rem;
+  /* 画像を中央に配置するためのスタイル */
+  display: flex; /* bodyをFlexboxコンテナにする */
+  flex-direction: column; /* 子要素を縦方向に並べる */
+  justify-content: center; /* 垂直方向の中央揃え */
+  align-items: center; /* 水平方向の中央揃え */
+  min-height: 100vh; /* bodyの高さをビューポートの高さに合わせる */
+  margin: 0; /* デフォルトのマージンをリセット */
 }
 
 .uk-container {
@@ -89,4 +95,10 @@ body {
   100% {
     transform: rotate(360deg);
   }
+}
+
+/* 画像を中央に配置するためのスタイル */
+.centered-image {
+  max-width: 100%; /* 画像がコンテナからはみ出さないように調整 */
+  height: auto; /* アスペクト比を維持 */
 }
