@@ -42,7 +42,7 @@
  </div>
 
 <img src="/static/images/IDCardTouchRequest.jpg" alt="ID Card Touch Request" class="centered-image">
-
+<script src= "/static/js/LdapByGemini2_5Pro.js"></script>
 <script type='module'>
  import {NFCPortLib, NFCPortError, Configuration, DetectionOption, CommunicationOption, TargetCard} from 'https://cdn.felica-support.sony.biz/webclient/trial/NFCPortLib.js';
 
@@ -128,6 +128,7 @@
     GID = _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join('');
     console.log('GID = ' + GID);
     communicateTitle.innerText = 'GID : ' + GID;
+     getLdapUserInfoJs(GID);
     return GID;
     }, (error) => {
       communicateTitle.innerText = 'Read error';
@@ -150,7 +151,7 @@
       communicateTitle.innerText = 'Read error';
       throw(error);
    });
-
+  
    /* close() */
    await lib.close();
    lib = null;

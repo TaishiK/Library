@@ -169,7 +169,7 @@ async function getLdapUserInfoJs(gid) {
 // --- Node.jsでの実行例 ---
 
 async function testLdapSearch() {
-    const employeeId = "0000920442"; // ここに検索したい社員番号(GID)を入力してください
+    const employeeId = "0000920442";git  // ここに検索したい社員番号(GID)を入力してください
 
     console.log(`\nAttempting to fetch LDAP information for GID: ${employeeId}`);
     const userInfo = await getLdapUserInfoJs(employeeId);
