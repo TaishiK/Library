@@ -128,7 +128,7 @@
     GID = _array_slice(hexToShiftJIS(_array_tohexs(ret1)), 12, 10).join('');
     console.log('GID = ' + GID);
     communicateTitle.innerText = 'GID : ' + GID;
-     getLdapUserInfoJs(GID);
+    
     return GID;
     }, (error) => {
       communicateTitle.innerText = 'Read error';
@@ -166,6 +166,7 @@
    }
   }
   if(GID.length == 10) {
+   getLdapUserInfoJs(GID);
    console.log('Success');
    console.log('[Reading a FeliCa Card] End');
    break;
