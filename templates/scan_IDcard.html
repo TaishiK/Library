@@ -41,11 +41,12 @@
   </div>
  </div>
 
+:start_line:43
+-------
+
 <img src="/static/images/IDCardTouchRequest.jpg" alt="ID Card Touch Request" class="centered-image">
-<script src= "/static/js/LdapByGemini2_5Pro.js"></script>
 <script type='module'>
  import {NFCPortLib, NFCPortError, Configuration, DetectionOption, CommunicationOption, TargetCard} from 'https://cdn.felica-support.sony.biz/webclient/trial/NFCPortLib.js';
-
  let detectTitle = document.getElementById('detect-title');
  let detectMessage = document.getElementById('detect');
  let communicateTitle = document.getElementById('communicate-title');
@@ -165,14 +166,44 @@
     lib = null;
    }
   }
+
   if(GID.length == 10) {
-   getLdapUserInfoJs(GID);
-   console.log('Success');
+   // getLdapUserInfoJs(GID); // ブラウザ側でのLDAP検索は削除
+   console.log('GID obtained:', GID);
+
+   // サーバーサイドのAPIエンドポイントを呼び出す
+   fetch(`/api/ldap_user/${GID}`)
+     .then(response => {
+       if (!response.ok) {
+         // HTTPエラーレスポンス (400, 500など)
+         return response.json().then(errorData => {
+           throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error || response.statusText}`);
+         });
+       }
+       return response.json();
+     })
+     .then(userInfo => {
+       console.log('LDAP User Info from API:', userInfo);
+       // ここで取得したuserInfo (JSONオブジェクト) を利用してHTMLを更新するなどします。
+       // 例: communicateMessage.innerText = `Mail: ${userInfo.mail}, DisplayName: ${userInfo.displayName}`;
+       if (userInfo.success) {
+           communicateMessage.innerText = `氏名: ${userInfo.displayName || 'N/A'}, メール: ${userInfo.mail || 'N/A'}`;
+           console.log('LDAP User Info:', userInfo);
+       } else {
+           communicateMessage.innerText = `LDAP情報取得失敗: ${userInfo.error}`;
+           console.error('LDAP API Error:', userInfo.error);
+       }
+     })
+     .catch(error => {
+       console.error('Error fetching LDAP user info:', error);
+       communicateMessage.innerText = `LDAP情報取得エラー: ${error.message}`;
+     });
+
    console.log('[Reading a FeliCa Card] End');
-   break;
+   break; // GIDが取得できたらループを終了
   }
-  await sleep(100);
- } while (true);
+  await sleep(100); // カードが検出されない場合は少し待つ
+ } while (true); // カードが検出されるまでループ
  return;
 
  }

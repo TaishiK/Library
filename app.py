@@ -6,6 +6,8 @@ from flask import Flask, g, render_template, request, jsonify
 from datetime import datetime # InstanceID生成用
 import nfc
 import binascii
+import ldap # python-ldap ライブラリをインポート
+import ldap.sasl # SASL認証のためにインポート
 
 DATABASE = 'Libraries.db'
 
@@ -90,6 +92,146 @@ def init_db():
 
 # アプリケーション起動時にデータベースを初期化
 init_db()
+
+# --- LDAP設定 (実際の環境に合わせて調整してください) ---
+# VBAコードから推測される設定値を使用。必要に応じて変更してください。
+LDAP_SERVER_URL = 'ldaps://LDAP.jp.sony.com' # ADS_USE_SSLからLDAPSと判断
+LDAP_BASE_DN_FOR_SEARCH = 'OU=Users,OU=JPUsers,DC=jp,DC=sony,DC=com'
+# ----------------------------------------------------
+
+# --- PythonでのLDAP検索関数 ---
+def get_ldap_user_info_python(gid):
+    """
+    LDAPサーバーから指定されたGID (社員番号) のユーザー情報を取得します。
+    SASL GSSAPI (Kerberos) 認証を試みます。
+
+    :param gid: 検索するユーザーのGID (社員番号)
+    :return: ユーザー情報を含む辞書、またはエラー情報を含む辞書
+    """
+    user_dn = f"CN={gid},{LDAP_BASE_DN_FOR_SEARCH}"
+    l = None # LDAPObject インスタンスを初期化
+
+    try:
+        # LDAPサーバーに接続
+        # ldap.initialize は接続を確立せず、LDAPObject インスタンスを作成するだけです。
+        # 実際の接続は bind や search などの操作時に行われます。
+        l = ldap.initialize(LDAP_SERVER_URL)
+
+        # 接続オプションの設定
+        l.set_option(ldap.OPT_REFERRALS, 0) # リフェラルを自動的に追わない
+        l.set_option(ldap.OPT_PROTOCOL_VERSION, 3) # LDAPv3を使用
+        # TLS/SSL設定 (LDAPSの場合)
+        # 本番環境では、サーバー証明書を適切に検証してください。
+        # 自己署名証明書やプライベートCAの場合は、ca_certs, certfile, keyfileなどのオプション設定が必要な場合があります。
+        # l.set_option(ldap.OPT_X_TLS_CACERTFILE, '/path/to/ca.crt')
+        # l.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_DEMAND) # 証明書を要求し検証する
+        l.set_option(ldap.OPT_X_TLS_NEWCTX, 0) # 新しいTLSコンテキストを作成 (既存のコンテキストを再利用しない)
+
+        # SASL GSSAPI (Kerberos) 認証
+        # SASL bind はユーザー名とパスワードなしで、実行ユーザーのKerberosチケットを使用します。
+        # 環境変数 KRB5CCNAME でチケットキャッシュの場所を指定する必要がある場合があります。
+        # Windowsの場合は、実行ユーザーがドメインユーザーである必要があります。
+        auth_tokens = ldap.sasl.gssapi()
+        l.sasl_interactive_bind_s("", auth_tokens)
+        print(f"LDAP SASL/GSSAPI Bind successful to {LDAP_SERVER_URL}")
+
+        # 検索オプション
+        search_filter = "(objectClass=*)" # baseスコープなのでフィルタは実質不要だが形式的に指定
+        search_attributes = [ # VBAコードで参照・コメントアウトされていた属性
+            'mail',
+            'sn',         # 姓
+            'givenName',  # 名
+            'displayName',
+            'telephoneNumber',
+            'physicalDeliveryOfficeName',
+            'department',
+            'streetAddress',
+            'l',          # 市区町村
+            'st',         # 都道府県
+            'company'
+        ]
+        search_scope = ldap.SCOPE_BASE # 指定されたDNのオブジェクトのみを検索
+
+        # 検索実行
+        # search_s は同期検索
+        result_id = l.search(user_dn, search_scope, search_filter, search_attributes)
+        # search_s の結果はリストのリスト [(dn, entry), ...]
+        results = l.result(result_id, 0)[1] # result() の戻り値は (type, [(dn, entry), ...])
+
+        if not results:
+            print(f"User not found with DN: {user_dn}")
+            return {"success": False, "error": f"User not found with GID: {gid}"}
+
+        # 最初の検索結果を取得 (baseスコープなので通常は1つ)
+        dn, entry = results[0]
+        print(f"Found user: {dn}")
+
+        # 属性値をデコードして取得
+        user_info = {
+            "success": True,
+            "ldap_val": True, # 成功時はtrue
+            "dn": dn,
+            # 属性値はバイト文字列で返されるため、UTF-8などでデコードが必要
+            "mail": entry.get('mail', [b''])[0].decode('utf-8', errors='ignore'),
+            "sn": entry.get('sn', [b''])[0].decode('utf-8', errors='ignore'),
+            "givenName": entry.get('givenName', [b''])[0].decode('utf-8', errors='ignore'),
+            "displayName": entry.get('displayName', [b''])[0].decode('utf-8', errors='ignore'),
+            "telephoneNumber": entry.get('telephoneNumber', [b''])[0].decode('utf-8', errors='ignore'),
+            "physicalDeliveryOfficeName": entry.get('physicalDeliveryOfficeName', [b''])[0].decode('utf-8', errors='ignore'),
+            "department": entry.get('department', [b''])[0].decode('utf-8', errors='ignore'),
+            "streetAddress": entry.get('streetAddress', [b''])[0].decode('utf-8', errors='ignore'),
+            "l": entry.get('l', [b''])[0].decode('utf-8', errors='ignore'), # 市区町村
+            "st": entry.get('st', [b''])[0].decode('utf-8', errors='ignore'), # 都道府県
+            "company": entry.get('company', [b''])[0].decode('utf-8', errors='ignore'),
+            # 他の属性も必要に応じて追加
+            "raw_entry": entry # デバッグ用に生の属性も保持
+        }
+        return user_info
+
+    except ldap.LDAPError as e:
+        error_message = f"LDAP operation failed: {e}"
+        print(f"[LDAP Error] {error_message}")
+        # SASL GSSAPI関連のエラーメッセージをより詳細にする
+        if isinstance(e, ldap.SERVER_DOWN):
+             error_message += " (Server is down or unreachable)"
+        elif isinstance(e, ldap.LOCAL_ERROR) and "sasl" in str(e).lower():
+             error_message += " (SASL/GSSAPI error. Check Kerberos ticket and configuration.)"
+        elif isinstance(e, ldap.PROTOCOL_ERROR):
+             error_message += " (LDAP protocol error)"
+        # その他のLDAPエラーコードに応じたメッセージを追加可能
+
+        return {"success": False, "ldap_val": False, "error": error_message}
+    except Exception as e:
+        # その他の予期せぬエラー
+        error_message = f"An unexpected error occurred: {e}"
+        print(f"[Unexpected Error] {error_message}")
+        return {"success": False, "ldap_val": False, "error": error_message}
+    finally:
+        # 接続を閉じる
+        if l is not None:
+            try:
+                l.unbind_s()
+                print("LDAP Unbind successful.")
+            except ldap.LDAPError as e:
+                print(f"[LDAP Unbind Error] {e}")
+
+# --- APIエンドポイント: LDAPユーザー情報取得 ---
+@app.route('/api/ldap_user/<gid>', methods=['GET'])
+def api_get_ldap_user(gid):
+    """
+    指定されたGIDのLDAPユーザー情報を取得するAPIエンドポイント。
+    """
+    if not gid:
+        return jsonify({"success": False, "error": "GID is required"}), 400
+
+    print(f"Received request for LDAP user with GID: {gid}")
+    user_info = get_ldap_user_info_python(gid)
+
+    if user_info.get("success"):
+        return jsonify(user_info), 200
+    else:
+        # LDAP検索関数からのエラー情報をそのまま返す
+        return jsonify(user_info), 500 # LDAPエラーはサーバーサイドのエラーとして扱う
 
 # ルートURLへのアクセス処理 - メインメニューを表示
 @app.route('/')
