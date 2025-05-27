@@ -9,6 +9,7 @@ import binascii
 import ldap # python-ldap ライブラリをインポート
 import ldap.sasl # SASL認証のためにインポート
 
+
 DATABASE = 'Libraries.db'
 
 app = Flask(__name__, static_folder='static')
@@ -95,7 +96,7 @@ init_db()
 
 # --- LDAP設定 (実際の環境に合わせて調整してください) ---
 # VBAコードから推測される設定値を使用。必要に応じて変更してください。
-LDAP_SERVER_URL = 'ldaps://LDAP.jp.sony.com' # ADS_USE_SSLからLDAPSと判断
+LDAP_SERVER_URL = 'LDAP://LDAP.jp.sony.com' # ADS_USE_SSLからLDAPSと判断→AccessがLDAP://なので合わせた
 LDAP_BASE_DN_FOR_SEARCH = 'OU=Users,OU=JPUsers,DC=jp,DC=sony,DC=com'
 # ----------------------------------------------------
 
