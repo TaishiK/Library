@@ -1,4 +1,5 @@
 import os
+import sys
 import sqlite3
 import requests
 import xml.etree.ElementTree as ET
@@ -8,7 +9,8 @@ import nfc
 import binascii
 import ldap # python-ldap ライブラリをインポート
 import ldap.sasl # SASL認証のためにインポート
-
+#from ldap3 import Server, Connection, ALL, SASL, GSSAPI # ldap3ライブラリを使用する場合
+#import gssapi # GSSAPI認証のためにインポート
 
 DATABASE = 'Libraries.db'
 
@@ -96,7 +98,7 @@ init_db()
 
 # --- LDAP設定 (実際の環境に合わせて調整してください) ---
 # VBAコードから推測される設定値を使用。必要に応じて変更してください。
-LDAP_SERVER_URL = 'LDAP://LDAP.jp.sony.com' # ADS_USE_SSLからLDAPSと判断→AccessがLDAP://なので合わせた
+LDAP_SERVER_URL = 'LDAPS://LDAP.jp.sony.com' # ADS_USE_SSLからLDAPSと判断→AccessがLDAP://なので合わせた
 LDAP_BASE_DN_FOR_SEARCH = 'OU=Users,OU=JPUsers,DC=jp,DC=sony,DC=com'
 # ----------------------------------------------------
 
@@ -116,23 +118,25 @@ def get_ldap_user_info_python(gid):
         # LDAPサーバーに接続
         # ldap.initialize は接続を確立せず、LDAPObject インスタンスを作成するだけです。
         # 実際の接続は bind や search などの操作時に行われます。
-        l = ldap.initialize(LDAP_SERVER_URL)
+        l = ldap.initialize(LDAP_SERVER_URL, trace_level=3) # trace_level=0 はデバッグ出力を抑制
+        print(f"Connecting to LDAP server: {LDAP_SERVER_URL}")
 
         # 接続オプションの設定
-        l.set_option(ldap.OPT_REFERRALS, 0) # リフェラルを自動的に追わない
+        #l.set_option(ldap.OPT_REFERRALS, 0) # リフェラルを自動的に追わない
         l.set_option(ldap.OPT_PROTOCOL_VERSION, 3) # LDAPv3を使用
         # TLS/SSL設定 (LDAPSの場合)
         # 本番環境では、サーバー証明書を適切に検証してください。
         # 自己署名証明書やプライベートCAの場合は、ca_certs, certfile, keyfileなどのオプション設定が必要な場合があります。
-        # l.set_option(ldap.OPT_X_TLS_CACERTFILE, '/path/to/ca.crt')
-        # l.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_DEMAND) # 証明書を要求し検証する
+        l.set_option(ldap.OPT_X_TLS_CACERTFILE, "/etc/ssl/certs/Sony_Root_CA2.cer","/etc/ssl/certs/Sony_Intranet_CA2.cer") # CA証明書ファイルのパスを指定
+        #l.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_DEMAND, "/etc/ssl/certs/Sony_Intranet_CA2.cer") # 証明書を要求し検証する
         l.set_option(ldap.OPT_X_TLS_NEWCTX, 0) # 新しいTLSコンテキストを作成 (既存のコンテキストを再利用しない)
 
         # SASL GSSAPI (Kerberos) 認証
         # SASL bind はユーザー名とパスワードなしで、実行ユーザーのKerberosチケットを使用します。
         # 環境変数 KRB5CCNAME でチケットキャッシュの場所を指定する必要がある場合があります。
         # Windowsの場合は、実行ユーザーがドメインユーザーである必要があります。
-        auth_tokens = ldap.sasl.gssapi()
+        auth_tokens = ldap.sasl.sasl({}, 'GSSAPI') # GSSAPI認証を使用
+        print("auth_tokens:", auth_tokens) # デバッグ用に認証トークンを表示
         l.sasl_interactive_bind_s("", auth_tokens)
         print(f"LDAP SASL/GSSAPI Bind successful to {LDAP_SERVER_URL}")
 

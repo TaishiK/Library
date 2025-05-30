@@ -20,7 +20,7 @@ async function getLdapUserInfoJs(gid) {
             // 本番環境では、サーバー証明書を適切に検証してください。
             // 自己署名証明書やプライベートCAの場合は、ca, cert, keyなどのオプション設定が必要な場合があります。
             // 一般的なドメイン認証局発行の証明書であれば、Node.jsのデフォルトCAストアで検証されることが多いです。
-            rejectUnauthorized: true, // セキュリティのためtrueを推奨。接続に失敗する場合は証明書関連の問題を確認してください。
+            rejectUnauthorized: false, // セキュリティのためtrueを推奨。接続に失敗する場合は証明書関連の問題を確認してください。
             // host: 'LDAP.jp.sony.com' // SNI (Server Name Indication) のためにホスト名を明示することが役立つ場合があります
         },
         connectTimeout: 10000, // 接続タイムアウト (ミリ秒)
