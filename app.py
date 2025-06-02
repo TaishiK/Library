@@ -123,13 +123,13 @@ def get_ldap_user_info_python(gid):
 
         # 接続オプションの設定
         #l.set_option(ldap.OPT_REFERRALS, 0) # リフェラルを自動的に追わない
-        l.set_option(ldap.OPT_PROTOCOL_VERSION, 3) # LDAPv3を使用
+        #l.set_option(ldap.OPT_PROTOCOL_VERSION, 3) # LDAPv3を使用
         # TLS/SSL設定 (LDAPSの場合)
         # 本番環境では、サーバー証明書を適切に検証してください。
         # 自己署名証明書やプライベートCAの場合は、ca_certs, certfile, keyfileなどのオプション設定が必要な場合があります。
-        l.set_option(ldap.OPT_X_TLS_CACERTFILE, "/etc/ssl/certs/Sony_Root_CA2.cer","/etc/ssl/certs/Sony_Intranet_CA2.cer") # CA証明書ファイルのパスを指定
+        l.set_option(ldap.OPT_X_TLS_CACERTFILE, "/etc/ssl/certs/Sony_Root_CA2.cer") # CA証明書ファイルのパスを指定
         #l.set_option(ldap.OPT_X_TLS_REQUIRE_CERT, ldap.OPT_X_TLS_DEMAND, "/etc/ssl/certs/Sony_Intranet_CA2.cer") # 証明書を要求し検証する
-        l.set_option(ldap.OPT_X_TLS_NEWCTX, 0) # 新しいTLSコンテキストを作成 (既存のコンテキストを再利用しない)
+        #l.set_option(ldap.OPT_X_TLS_NEWCTX, 0) # 新しいTLSコンテキストを作成 (既存のコンテキストを再利用しない)
 
         # SASL GSSAPI (Kerberos) 認証
         # SASL bind はユーザー名とパスワードなしで、実行ユーザーのKerberosチケットを使用します。
