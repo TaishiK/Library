@@ -173,7 +173,7 @@
 
    // サーバーサイドのAPIエンドポイントを呼び出す
    fetch(`/api/ldap_user/${GID}`)
-     .then(response => {
+        .then(response => {
        if (!response.ok) {
          // HTTPエラーレスポンス (400, 500など)
          return response.json().then(errorData => {
@@ -198,7 +198,7 @@
        console.error('Error fetching LDAP user info:', error);
        communicateMessage.innerText = `LDAP情報取得エラー: ${error.message}`;
      });
-
+   
    console.log('[Reading a FeliCa Card] End');
    break; // GIDが取得できたらループを終了
   }

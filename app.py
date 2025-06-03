@@ -11,6 +11,9 @@ import ldap # python-ldap ライブラリをインポート
 import ldap.sasl # SASL認証のためにインポート
 #from ldap3 import Server, Connection, ALL, SASL, GSSAPI # ldap3ライブラリを使用する場合
 #import gssapi # GSSAPI認証のためにインポート
+from ldap3 import Server, Connection, Tls, SASL, KERBEROS, ALL
+import gssapi
+import ssl
 
 DATABASE = 'Libraries.db'
 
@@ -93,24 +96,21 @@ def init_db():
         print(f"Database {app.config['DATABASE']} already exists.")
 
 
-# アプリケーション起動時にデータベースを初期化
-init_db()
-
 # --- LDAP設定 (実際の環境に合わせて調整してください) ---
 # VBAコードから推測される設定値を使用。必要に応じて変更してください。
-LDAP_SERVER_URL = 'LDAPS://LDAP.jp.sony.com' # ADS_USE_SSLからLDAPSと判断→AccessがLDAP://なので合わせた
-LDAP_BASE_DN_FOR_SEARCH = 'OU=Users,OU=JPUsers,DC=jp,DC=sony,DC=com'
+#LDAP_SERVER_URL = 'LDAPS://LDAP.jp.sony.com' # ADS_USE_SSLからLDAPSと判断→AccessがLDAP://なので合わせた
+#LDAP_BASE_DN_FOR_SEARCH = 'OU=Users,OU=JPUsers,DC=jp,DC=sony,DC=com'
 # ----------------------------------------------------
 
 # --- PythonでのLDAP検索関数 ---
-def get_ldap_user_info_python(gid):
-    """
-    LDAPサーバーから指定されたGID (社員番号) のユーザー情報を取得します。
-    SASL GSSAPI (Kerberos) 認証を試みます。
+"""def get_ldap_user_info_python(gid):
+    
+    #LDAPサーバーから指定されたGID (社員番号) のユーザー情報を取得します。
+    #SASL GSSAPI (Kerberos) 認証を試みます。
 
-    :param gid: 検索するユーザーのGID (社員番号)
-    :return: ユーザー情報を含む辞書、またはエラー情報を含む辞書
-    """
+    #:param gid: 検索するユーザーのGID (社員番号)
+    #:return: ユーザー情報を含む辞書、またはエラー情報を含む辞書
+    
     user_dn = f"CN={gid},{LDAP_BASE_DN_FOR_SEARCH}"
     l = None # LDAPObject インスタンスを初期化
 
@@ -220,12 +220,74 @@ def get_ldap_user_info_python(gid):
             except ldap.LDAPError as e:
                 print(f"[LDAP Unbind Error] {e}")
 
+
+    """
+#def get_ldap_user_info_python(gid):
+def get_ldap_user_info_python(gid):
+    # サーバーアドレスと証明書のパスを設定
+    server_address = "LDAP.jp.sony.com"  # FQDNを使用
+    root_ca_path = "/etc/ssl/certs/Sony_Root_CA2.cer"
+    intermediate_ca_path = "/etc/ssl/certs/Sony_Intranet_CA2.cer"
+    
+    try:
+        # TLS設定を構成
+        tls_configuration = Tls(
+            validate=ssl.CERT_REQUIRED,
+            version=ssl.PROTOCOL_TLS,
+            ca_certs_file=root_ca_path,
+            ca_certs_path=intermediate_ca_path
+        )
+        bind_dn = f"cn={gid},ou=Users,ou=JPUsers,dc=jp,dc=sony,dc=com"
+        # LDAPサーバーの情報を設定（ポート636を指定）
+        #server = Server(server_address, port=636, use_ssl=True, tls=tls_configuration, get_info=ALL)
+        server = Server(server_address, port=636, use_ssl=True, get_info=ALL)
+        # Kerberos認証を使用して接続
+        #conn = Connection(server, authentication=SASL, sasl_mechanism=KERBEROS, sasl_credentials=None, auto_bind=True)
+        #conn = Connection(server, user=bind_dn, password="PASSWORD", auto_bind=True)
+        #conn = Connection(server)
+        conn = Connection(server, auto_bind='NONE', version=3, authentication='ANONYMOUS',client_strategy='SYNC', auto_referrals=True, read_only=False, lazy=False, raise_exceptions=False)
+        # 接続確認
+        if not conn.bind():
+            print(f"LDAP接続に失敗しました: {conn.result}")
+            return None
+        
+        print("LDAP接続に成功しました。")
+        
+        # 検索条件を設定
+        search_base = "OU=Users,OU=JPUsers,DC=jp,DC=sony,DC=com"
+        search_filter = f"(cn={gid})"
+        attributes = ['mail', 'sn', 'givenName']
+        
+        # LDAP検索を実行
+        if not conn.search(search_base, search_filter, attributes=attributes):
+            print(f"LDAP検索に失敗しました: {conn.result}")
+            return None
+        
+        # 結果を取得
+        if conn.entries:
+            user_info = conn.entries[0]
+            print(f"メールアドレス: {user_info.mail}")
+            print(f"姓: {user_info.sn}")
+            print(f"名: {user_info.givenName}")
+            return {
+                "mail": user_info.mail.value,
+                "family_name": user_info.sn.value,
+                "given_name": user_info.givenName.value
+            }
+        else:
+            print("指定したユーザーが見つかりませんでした。")
+            return None
+
+    except Exception as e:
+        print(f"エラーが発生しました: {e}")
+        return None
+# --- LDAPユーザー情報取得のAPIエンドポイント ---
+
 # --- APIエンドポイント: LDAPユーザー情報取得 ---
 @app.route('/api/ldap_user/<gid>', methods=['GET'])
 def api_get_ldap_user(gid):
-    """
-    指定されたGIDのLDAPユーザー情報を取得するAPIエンドポイント。
-    """
+    
+    #指定されたGIDのLDAPユーザー情報を取得するAPIエンドポイント。
     if not gid:
         return jsonify({"success": False, "error": "GID is required"}), 400
 
@@ -237,6 +299,8 @@ def api_get_ldap_user(gid):
     else:
         # LDAP検索関数からのエラー情報をそのまま返す
         return jsonify(user_info), 500 # LDAPエラーはサーバーサイドのエラーとして扱う
+
+
 
 # ルートURLへのアクセス処理 - メインメニューを表示
 @app.route('/')
