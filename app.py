@@ -240,12 +240,12 @@ def get_ldap_user_info_python(gid):
         bind_dn = f"cn={gid},ou=Users,ou=JPUsers,dc=jp,dc=sony,dc=com"
         # LDAPサーバーの情報を設定（ポート636を指定）
         #server = Server(server_address, port=636, use_ssl=True, tls=tls_configuration, get_info=ALL)
-        server = Server(server_address, port=636, use_ssl=True, get_info=ALL)
+        server = Server(server_address, port=3269, use_ssl=True, get_info=ALL)
         # Kerberos認証を使用して接続
-        #conn = Connection(server, authentication=SASL, sasl_mechanism=KERBEROS, sasl_credentials=None, auto_bind=True)
+        conn = Connection(server, authentication=SASL, sasl_mechanism=KERBEROS, sasl_credentials=None, auto_bind=True)
         #conn = Connection(server, user=bind_dn, password="PASSWORD", auto_bind=True)
         #conn = Connection(server)
-        conn = Connection(server, auto_bind='NONE', version=3, authentication='ANONYMOUS',client_strategy='SYNC', auto_referrals=True, read_only=False, lazy=False, raise_exceptions=False)
+        #conn = Connection(server, auto_bind='NONE', version=3, authentication='ANONYMOUS',client_strategy='SYNC', auto_referrals=True, read_only=False, lazy=False, raise_exceptions=False)
         # 接続確認
         if not conn.bind():
             print(f"LDAP接続に失敗しました: {conn.result}")
