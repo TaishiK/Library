@@ -1,3 +1,4 @@
+
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
  "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -37,12 +38,10 @@
     <br>
   <div class="communicate">
    <div id="communicate-title" class="communicate-title" style="display: inline;"></div><br>
-   <div id="communicate" class="communicate-response" style="display: inline;"></div>
+   <div id="communicate" class="communicate-response" style="display: inline;"></div><br>
+    <div id="communicate-message" class="communicate-response" style="display: inline;"></div>
   </div>
  </div>
-
-:start_line:43
--------
 
 <img src="/static/images/IDCardTouchRequest.jpg" alt="ID Card Touch Request" class="centered-image">
 <script type='module'>
@@ -51,6 +50,7 @@
  let detectMessage = document.getElementById('detect');
  let communicateTitle = document.getElementById('communicate-title');
  let communicateMessage = document.getElementById('communicate');
+ let communicateMessage2 = document.getElementById('communicate-message');
 
  document.addEventListener('DOMContentLoaded', function() {
    felica_card();
@@ -187,7 +187,7 @@
        // ここで取得したuserInfo (JSONオブジェクト) を利用してHTMLを更新するなどします。
        // 例: communicateMessage.innerText = `Mail: ${userInfo.mail}, DisplayName: ${userInfo.displayName}`;
        if (userInfo.success) {
-           communicateMessage.innerText = `氏名: ${userInfo.displayName || 'N/A'}, メール: ${userInfo.mail || 'N/A'}`;
+           communicateMessage2.innerText = `eMail: ${userInfo.mail || 'N/A'}`;
            console.log('LDAP User Info:', userInfo);
        } else {
            communicateMessage.innerText = `LDAP情報取得失敗: ${userInfo.error}`;

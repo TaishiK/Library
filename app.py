@@ -237,13 +237,13 @@ def get_ldap_user_info_python(gid):
             ca_certs_file=root_ca_path,
             ca_certs_path=intermediate_ca_path
         )
-        bind_dn = f"cn={gid},ou=Users,ou=JPUsers,dc=jp,dc=sony,dc=com"
+        bind_dn = f"cn={os.environ['UserName']},ou=Users,ou=JPUsers,dc=jp,dc=sony,dc=com"
         # LDAPサーバーの情報を設定（ポート636を指定）
         #server = Server(server_address, port=636, use_ssl=True, tls=tls_configuration, get_info=ALL)
         server = Server(server_address, port=3269, use_ssl=True, get_info=ALL)
         # Kerberos認証を使用して接続
-        conn = Connection(server, authentication=SASL, sasl_mechanism=KERBEROS, sasl_credentials=None, auto_bind=True)
-        #conn = Connection(server, user=bind_dn, password="PASSWORD", auto_bind=True)
+        #conn = Connection(server, authentication=SASL, sasl_mechanism=KERBEROS, sasl_credentials=None, auto_bind=True)
+        conn = Connection(server, user=bind_dn, password=os.environ['PASSWORD'], auto_bind=True)
         #conn = Connection(server)
         #conn = Connection(server, auto_bind='NONE', version=3, authentication='ANONYMOUS',client_strategy='SYNC', auto_referrals=True, read_only=False, lazy=False, raise_exceptions=False)
         # 接続確認
@@ -256,7 +256,7 @@ def get_ldap_user_info_python(gid):
         # 検索条件を設定
         search_base = "OU=Users,OU=JPUsers,DC=jp,DC=sony,DC=com"
         search_filter = f"(cn={gid})"
-        attributes = ['mail', 'sn', 'givenName']
+        attributes = ['mail', 'sn', 'givenName', 'department', 'company']
         
         # LDAP検索を実行
         if not conn.search(search_base, search_filter, attributes=attributes):
@@ -266,14 +266,21 @@ def get_ldap_user_info_python(gid):
         # 結果を取得
         if conn.entries:
             user_info = conn.entries[0]
-            print(f"メールアドレス: {user_info.mail}")
-            print(f"姓: {user_info.sn}")
-            print(f"名: {user_info.givenName}")
-            return {
-                "mail": user_info.mail.value,
-                "family_name": user_info.sn.value,
-                "given_name": user_info.givenName.value
+            print(f"ユーザー情報が見つかりました: {user_info}")                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+            # 必要な属性を辞書形式で返す
+            user_info = {
+                "success": True,
+                "ldap_val": True,  # 成功時はTrue
+                #"dn": user_info.entry_dn,
+                "mail": user_info.mail.value if 'mail' in user_info else None,
+                #"sn": user_info.sn.value if 'sn' in user_info else None,
+                #"givenName": user_info.givenName.value if 'givenName' in user_info else None,
+                #"department": user_info.department.value if 'department' in user_info else None,
+                #"company": user_info.company.value if 'company' in user_info else None,
+                # 他の必要な属性も追加可能
             }
+ 
+            return user_info
         else:
             print("指定したユーザーが見つかりませんでした。")
             return None
@@ -294,7 +301,8 @@ def api_get_ldap_user(gid):
     print(f"Received request for LDAP user with GID: {gid}")
     user_info = get_ldap_user_info_python(gid)
 
-    if user_info.get("success"):
+    if user_info:
+        #print(f"LDAP user found: {user_info}")
         return jsonify(user_info), 200
     else:
         # LDAP検索関数からのエラー情報をそのまま返す
