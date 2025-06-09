@@ -1,0 +1,8 @@
+リクエスト１
+/templates/scan_IDcard.htmlの188行目 success.user_infoがtrueの時、190行目の処理後、
+/templates/scan_QRcode.html　に画面遷移するようにコードを追加して下さい。
+
+リクエスト２
+１）/templates/scan_QRcode.htmlの画面中央に/static/images/ScanQRcode.jpgを配置して下さい。
+２）/templates/scan_QRcode.htmlの画面左下にボタン「メインメニュー」を作成、これを押すと/templates/main_menu.htmlに画面遷移するようにして下さい。
+３）/templates/scan_QRcode.htmlの右上に外部入力を待受けるテキストボックスを作成し、/templates/scan_QRcode.htmlに画面遷移した時は、このテキストボックスにカーソルを移動して下さい。

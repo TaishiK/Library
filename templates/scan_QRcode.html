@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>QRコードスキャン</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            width: 100vw;
+            position: relative;
+            background: #f8f8f8;
+        }
+        .center-image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 400px;
+            max-height: 400px;
+        }
+        .main-menu-btn {
+            position: absolute;
+            left: 40px;
+            bottom: 40px;
+            padding: 12px 32px;
+            font-size: 1.1em;
+            background: #1976d2;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .input-box {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+        }
+        .input-box input[type="text"] {
+            font-size: 1.2em;
+            padding: 6px 12px;
+            width: 220px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 右上テキストボックス -->
+    <div class="input-box">
+        <input type="text" id="externalInput" placeholder="外部入力を待機...">
+    </div>
+    <!-- 画面中央のQR画像 -->
+    <img src="/static/images/ScanQRcode.jpg" alt="QRコードをスキャン" class="center-image">
+    <!-- 左下のメインメニューボタン -->
+    <button class="main-menu-btn" onclick="window.location.href='/'">メインメニュー</button>
+    <script>
+        // ページ遷移時にテキストボックスへフォーカス
+        window.onload = function() {
+            document.getElementById('externalInput').focus();
+        };
+    </script>
+</body>
+</html>

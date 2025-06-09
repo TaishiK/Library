@@ -1,4 +1,3 @@
-
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
  "http://www.w3.org/TR/html4/loose.dtd">
 <html>
@@ -119,7 +118,7 @@
    });
 
    /* communicateThru(Read Block) */
-   let felica_read_without_encryption1 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b, 0x02, 1, 0x80,0x00]); //社員番号ブロック取得成功
+   let felica_read_without_encryption1 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b, 0x02, 1, 0x80,0x00]); //社員番号ブロック取得
             _array_copy(felica_read_without_encryption1, 2, card.idm, 0, card.idm.length);
    let response1 = await lib.communicateThru(felica_read_without_encryption1, 100, detectOption)
    .then(ret1 => {
@@ -136,8 +135,8 @@
       throw(error);
    });
  
-   let felica_read_without_encryption2 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b,0x01, 1, 0x80,0x01]);//半角カナ氏名ブロック取得成功
-            _array_copy(felica_read_without_encryption2, 2, card.idm, 0, card.idm.length);
+   let felica_read_without_encryption2 = new Uint8Array([16, 0x06, 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00, 1, 0x0b,0x01, 1, 0x80,0x01]);//半角カナ氏名ブロック取得
+               _array_copy(felica_read_without_encryption2, 2, card.idm, 0, card.idm.length);
    let response2 = await lib.communicateThru(felica_read_without_encryption2, 100, detectOption)
    .then(ret2 => {
     //communicateTitle.innerText = 'Reading...';
@@ -168,7 +167,6 @@
   }
 
   if(GID.length == 10) {
-   // getLdapUserInfoJs(GID); // ブラウザ側でのLDAP検索は削除
    console.log('GID obtained:', GID);
 
    // サーバーサイドのAPIエンドポイントを呼び出す
@@ -189,6 +187,8 @@
        if (userInfo.success) {
            communicateMessage2.innerText = `eMail: ${userInfo.mail || 'N/A'}`;
            console.log('LDAP User Info:', userInfo);
+           // LDAP認証成功時にQRコード画面へ遷移
+           window.location.href = '/scan_QRcode.html';
        } else {
            communicateMessage.innerText = `LDAP情報取得失敗: ${userInfo.error}`;
            console.error('LDAP API Error:', userInfo.error);
