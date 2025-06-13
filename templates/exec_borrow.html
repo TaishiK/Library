@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>書籍貸出処理</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f8f8f8;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 40px;
+        }
+        .book-info {
+            flex: 1;
+            min-width: 350px;
+        }
+        .thumbnail-area {
+            flex: 0 0 320px;
+            margin-left: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .thumbnail-img {
+            max-width: 300px;
+            max-height: 400px;
+            border: 1px solid #ccc;
+            background: #fff;
+        }
+        .button-row {
+            margin-top: 40px;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            gap: 40px;
+        }
+        .big-btn {
+            font-size: 1.5em;
+            padding: 24px 48px;
+            border-radius: 10px;
+            border: none;
+            background: #1976d2;
+            color: #fff;
+            cursor: pointer;
+            min-width: 200px;
+        }
+        .big-btn.right {
+            background: #43a047;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="book-info">
+            <h2>書籍情報</h2>
+            <div id="bookDetails">
+                <p>読込中...</p>
+            </div>
+            <div class="button-row">
+                <button class="big-btn left" id="nextBookBtn">次の書籍へ</button>
+                <button class="big-btn right" id="confirmBorrowBtn">貸出決定</button>
+            </div>
+        </div>
+        <div class="thumbnail-area">
+            <div id="thumbnailArea">
+                <!-- サムネイル or メッセージを表示 -->
+            </div>
+        </div>
+    </div>
+    <script>
+    // クエリパラメータからInstID取得
+    function getQueryParam(name) {
+        const url = new URL(window.location.href);
+        return url.searchParams.get(name);
+    }
+    const instID = getQueryParam('instid');
+    // 書籍情報取得API
+    async function fetchBookInfo(instID) {
+        // Flask APIを想定
+        const res = await fetch(`/api/instance_info/${encodeURIComponent(instID)}`);
+        if (!res.ok) return null;
+        return await res.json();
+    }
+    async function showBookInfo() {
+        const details = document.getElementById('bookDetails');
+        const thumbArea = document.getElementById('thumbnailArea');
+        if (!instID) {
+            details.innerHTML = '<p>インスタンスIDが指定されていません。</p>';
+            thumbArea.innerHTML = '';
+            return;
+        }
+        const data = await fetchBookInfo(instID);
+        if (!data || !data.success) {
+            details.innerHTML = '<p>該当する書籍情報が見つかりません。</p>';
+            thumbnailArea.innerHTML = '';
+            return;
+        }
+        // 書籍情報表示
+        details.innerHTML = `
+            <div><b>インスタンスID:</b> ${data.instance_id}</div>
+            <div><b>ISBN:</b> ${data.isbn}</div>
+            <div><b>書籍名:</b> ${data.title}</div>
+            <div><b>著者:</b> ${data.author}</div>
+            <div><b>出版社:</b> ${data.publisher}</div>
+            <div><b>発行年:</b> ${data.issue_year}</div>
+        `;
+        // サムネイル表示
+        if (data.thumbnail_exists && data.thumbnail_url) {
+            thumbnailArea.innerHTML = `<img src="${data.thumbnail_url}" alt="書影" class="thumbnail-img">`;
+        } else {
+            thumbnailArea.innerHTML = '<div>該当の書影はありません</div>';
+        }
+    }
+    showBookInfo();
+    // ボタンのイベントは後ほど実装
+    </script>
+</body>
+</html>

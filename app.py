@@ -201,6 +201,10 @@ def scan_idcard():
 def scan_qrcode():
     return render_template('scan_QRcode.html')
 
+@app.route('/exec_borrow.html')
+def exec_borrow():
+    return render_template('exec_borrow.html')
+
 @app.route('/control_menu')
 def control_menu():
     return render_template('control_menu.html')
@@ -337,7 +341,7 @@ def fetch_from_ndl(isbn):
                  try:
                      # 保存先ディレクトリ (プロジェクトルート直下の thumbnails)
                      # app.root_path を使うと Flask アプリケーションのルートパスを取得できる
-                     thumbnails_dir = os.path.join(app.root_path, 'thumbnails')
+                     thumbnails_dir = os.path.join(app.root_path, 'static', 'thumbnails')
                      # ディレクトリが存在しない場合は作成
                      os.makedirs(thumbnails_dir, exist_ok=True)
 
@@ -521,6 +525,37 @@ def api_register_book():
 
     # ダミーの返却処理
 #    return jsonify({"success": True, "message": f"社員ID: {employee_id}, ISBN: {isbn} の書籍を返却しました (実際には処理は行われていません)"})
+
+# APIエンドポイント: インスタンス情報取得
+@app.route('/api/instance_info/<instid>', methods=['GET'])
+def api_instance_info(instid):
+    db = get_db()
+    # T00_InstanceIDsからISBN取得
+    cur = db.execute('SELECT ISBN FROM T00_InstanceIDs WHERE InstanceID = ?', (instid,))
+    row = cur.fetchone()
+    if not row:
+        return jsonify({'success': False, 'error': '該当するインスタンスIDがありません。'})
+    isbn = row['ISBN']
+    # T01_ISBNsから書籍情報取得
+    cur2 = db.execute('SELECT Title, Author, Publisher, IssueYear FROM T01_ISBNs WHERE ISBN = ?', (isbn,))
+    book = cur2.fetchone()
+    if not book:
+        return jsonify({'success': False, 'error': '該当するISBNの書籍情報がありません。'})
+    # サムネイル存在チェック
+    thumbnail_path = os.path.join(app.root_path, 'static', 'thumbnails', f'{isbn}.jpg')
+    thumbnail_exists = os.path.exists(thumbnail_path)
+    thumbnail_url = f'/static/thumbnails/{isbn}.jpg' if thumbnail_exists else None
+    return jsonify({
+        'success': True,
+        'instance_id': instid,
+        'isbn': isbn,
+        'title': book['Title'],
+        'author': book['Author'],
+        'publisher': book['Publisher'],
+        'issue_year': book['IssueYear'],
+        'thumbnail_exists': thumbnail_exists,
+        'thumbnail_url': thumbnail_url
+    })
 
 if __name__ == '__main__':
     # init_db() # init_dbは起動時に一度だけ実行されれば良い

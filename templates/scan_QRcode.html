@@ -54,10 +54,35 @@
     <!-- 左下のメインメニューボタン -->
     <button class="main-menu-btn" onclick="window.location.href='/'">メインメニュー</button>
     <script>
+        // グローバル変数
+        window.InstID = null;
         // ページ遷移時にテキストボックスへフォーカス
         window.onload = function() {
-            document.getElementById('externalInput').focus();
+            const input = document.getElementById('externalInput');
+            input.focus();
+            // Enterキーまたは値入力時に遷移
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    handleInput();
+                }
+            });
+            // 外部入力機器用にinputイベントも監視
+            input.addEventListener('input', function(e) {
+                // 連続入力や自動送信機器対応（必要に応じて条件調整）
+                if (input.value.length > 0 && input.value.endsWith('\n')) {
+                    input.value = input.value.replace(/\n/g, '');
+                    handleInput();
+                }
+            });
         };
+        function handleInput() {
+            const val = document.getElementById('externalInput').value.trim();
+            if (val) {
+                window.InstID = val;
+                // 遷移時にInstIDをクエリパラメータで渡す
+                window.location.href = `/exec_borrow.html?instid=${encodeURIComponent(val)}`;
+            }
+        }
     </script>
 </body>
 </html>

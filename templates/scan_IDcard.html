@@ -181,7 +181,7 @@
        return response.json();
      })
      .then(userInfo => {
-       console.log('LDAP User Info from API:', userInfo);
+       console.log('LDAP User Info from API:', userInfo);// レスポンスをコンソールに出力
        // ここで取得したuserInfo (JSONオブジェクト) を利用してHTMLを更新するなどします。
        // 例: communicateMessage.innerText = `Mail: ${userInfo.mail}, DisplayName: ${userInfo.displayName}`;
        if (userInfo.success) {
