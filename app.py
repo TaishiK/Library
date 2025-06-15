@@ -14,6 +14,7 @@ import ldap.sasl # SASL認証のためにインポート
 from ldap3 import Server, Connection, Tls, SASL, KERBEROS, ALL
 import gssapi
 import ssl
+from dotenv import load_dotenv
 
 DATABASE = 'Libraries.db'
 
@@ -114,14 +115,17 @@ def get_ldap_user_info_python(gid):
             ca_certs_file=root_ca_path,
             ca_certs_path=intermediate_ca_path
         )
-        bind_dn = f"cn={os.environ['UserName']},ou=Users,ou=JPUsers,dc=jp,dc=sony,dc=com"
+        load_dotenv('.env')
+        bind_dn = f"cn={os.getenv('UserName')},ou=Users,ou=JPUsers,dc=jp,dc=sony,dc=com"
+        #print('UserName = ', os.getenv('UserName'))
+        #print('pwd = ', os.getenv('PASSWORD'))
         # LDAPサーバーの情報を設定（ポート636を指定）
-        #server = Server(server_address, port=636, use_ssl=True, tls=tls_configuration, get_info=ALL)
-        server = Server(server_address, port=3269, use_ssl=True, get_info=ALL)
+        server = Server(server_address, port=636, use_ssl=True, tls=tls_configuration, get_info=ALL)
+        #server = Server(server_address, port=636, use_ssl=True, get_info=ALL)
         # Kerberos認証を使用して接続
         #conn = Connection(server, authentication=SASL, sasl_mechanism=KERBEROS, sasl_credentials=None, auto_bind=True)
         #環境変数を利用して接続
-        conn = Connection(server, user=bind_dn, password=os.environ['PASSWORD'], auto_bind=True)
+        conn = Connection(server, user=bind_dn, password=os.getenv('PASSWORD'), auto_bind=True)
         #conn = Connection(server)　＃匿名で接続可能か確認、下の行も同様→　結果はNG 
         #conn = Connection(server, auto_bind='NONE', version=3, authentication='ANONYMOUS',client_strategy='SYNC', auto_referrals=True, read_only=False, lazy=False, raise_exceptions=False)
         # 接続確認
