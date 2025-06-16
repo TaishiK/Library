@@ -72,9 +72,11 @@ CREATE TABLE IF NOT EXISTS T04_Locations (
     MemberOnly INTEGER,
     Department TEXT,
     MonitorType TEXT,
-    RemindMail INTEGER
+    RemindMail INTEGER,
+    MailByAutomated INTEGER
 );
 """
+
 
 # データベースを初期化する関数
 def init_db():
@@ -562,5 +564,5 @@ def api_instance_info(instid):
     })
 
 if __name__ == '__main__':
-    # init_db() # init_dbは起動時に一度だけ実行されれば良い
+    #init_db() # init_dbは起動時に一度だけ実行されれば良い
     app.run(debug=True) # デバッグモードで起動
