@@ -15,6 +15,8 @@ from ldap3 import Server, Connection, Tls, SASL, KERBEROS, ALL
 import gssapi
 import ssl
 from dotenv import load_dotenv
+import socket # ソケット通信のためにインポート
+import platform # プラットフォーム情報取得のためにインポート
 
 DATABASE = 'Libraries.db'
 
@@ -562,6 +564,74 @@ def api_instance_info(instid):
         'thumbnail_exists': thumbnail_exists,
         'thumbnail_url': thumbnail_url
     })
+
+# T05_Lent_Recordsテーブル作成（AutoIncrement対応）
+SCHEMA_SQL += """
+CREATE TABLE IF NOT EXISTS T05_Lent_Records (
+    LentID INTEGER PRIMARY KEY AUTOINCREMENT,
+    InstID TEXT,
+    Location TEXT,
+    GID TEXT,
+    DateLent TEXT,
+    DateReturnExpected TEXT,
+    eMail TEXT,
+    ReturnRequest INTEGER
+);
+"""
+
+# PCシリアル取得API（ダミー: 環境変数やホスト名で代用）
+@app.route('/api/get_pc_serial')
+def get_pc_serial():
+    import socket
+    serial = os.environ.get('PC_SERIAL') or socket.gethostname()
+    return jsonify({'serial': serial})
+
+# 返却予定日計算API
+@app.route('/api/get_return_expected')
+def get_return_expected():
+    serial = request.args.get('serial')
+    db = get_db()
+    # T04_LocationsからDefaultTerm（日数）取得
+    cur = db.execute('SELECT DefaultTerm FROM T04_Locations WHERE SerialNumber = ?', (serial,))
+    row = cur.fetchone()
+    days = int(row['DefaultTerm']) if row and row['DefaultTerm'] else 14
+    from datetime import datetime, timedelta
+    dt = datetime.now() + timedelta(days=days)
+    date_return_expected = dt.strftime('%Y%m%d %H:%M:%S')
+    return jsonify({'date_return_expected': date_return_expected})
+
+# 貸出レコード登録API
+@app.route('/api/register_lent_record', methods=['POST'])
+def register_lent_record():
+    data = request.get_json()
+    inst_id = data.get('inst_id')
+    location = data.get('location')
+    gid = data.get('gid')
+    date_lent = data.get('date_lent')
+    date_return_expected = data.get('date_return_expected')
+    email = data.get('email')
+    return_request = data.get('return_request', 0)
+    db = get_db()
+    try:
+        db.execute('''
+            INSERT INTO T05_Lent_Records (InstID, Location, GID, DateLent, DateReturnExpected, eMail, ReturnRequest)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (inst_id, location, gid, date_lent, date_return_expected, email, return_request))
+        db.commit()
+        return jsonify({'success': True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'success': False, 'error': str(e)})
+
+# PCシリアルからT04_LocationsのLocation列を返すAPI（/api/get_location_by_serial）を追加。
+@app.route('/api/get_location_by_serial')
+def get_location_by_serial():
+    serial = socket.gethostname()  # または os.environ.get('PC_SERIAL') で環境変数から取得
+    db = get_db()
+    cur = db.execute('SELECT Location FROM T04_Locations WHERE SerialNumber = ?', (serial,))
+    row = cur.fetchone()
+    location = row['Location'] if row else ''
+    return jsonify({'location': location})
 
 if __name__ == '__main__':
     #init_db() # init_dbは起動時に一度だけ実行されれば良い

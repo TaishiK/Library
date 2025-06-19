@@ -64,8 +64,8 @@
                 <p>読込中...</p>
             </div>
             <div class="button-row">
-                <button class="big-btn left" id="nextBookBtn">次の書籍へ</button>
-                <button class="big-btn right" id="confirmBorrowBtn">貸出決定</button>
+                <button class="big-btn left" id="nextBookBtn">貸し出して次の書籍へ</button>
+                <button class="big-btn right" id="confirmBorrowBtn">貸し出して終了</button>
             </div>
         </div>
         <div class="thumbnail-area">
@@ -74,6 +74,9 @@
             </div>
         </div>
     </div>
+    <div style="position: absolute; top: 30px; right: 1000px;">
+        <button id="cancelBtn" style="font-size:1.1em; padding:10px 24px; background:#bdbdbd; color:#222; border:none; border-radius:6px; cursor:pointer;">貸し出さず中止</button>
+    </div>
     <script>
     // クエリパラメータからInstID取得
     function getQueryParam(name) {
@@ -81,6 +84,10 @@
         return url.searchParams.get(name);
     }
     const instID = getQueryParam('instid');
+    // GIDとeMailはlocalStorageから取得（scan_IDcard.htmlで保存しておく想定）
+    const GID = localStorage.getItem('GID') || '';
+    const eMail = localStorage.getItem('eMail') || '';
+
     // 書籍情報取得API
     async function fetchBookInfo(instID) {
         // Flask APIを想定
@@ -119,6 +126,63 @@
         }
     }
     showBookInfo();
+
+    // 共通：貸出レコード登録API
+    async function registerLentRecord(nextAction) {
+        // PC名取得（シリアル）
+        let serialNumber = '';
+        try {
+            serialNumber = await (await fetch('/api/get_pc_serial')).json().serial || '';
+        } catch {}
+        // Location取得（T04_LocationsのSerialNumber→Location）
+        let location = '';
+        try {
+            const resp = await fetch(`/api/get_location_by_serial?serial=${encodeURIComponent(serialNumber)}`);
+            location = (await resp.json()).location || '';
+        } catch {}
+        // 返却予定日計算
+        let dateReturnExpected = '';
+        try {
+            const resp = await fetch(`/api/get_return_expected?serial=${encodeURIComponent(serialNumber)}`);
+            dateReturnExpected = (await resp.json()).date_return_expected || '';
+        } catch {}
+        // 現在時刻
+        const now = new Date();
+        const pad = n => n.toString().padStart(2, '0');
+        const dateLent = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        // GIDとeMailはlocalStorageから取得
+        const GID = localStorage.getItem('GID') || '';
+        const eMail = localStorage.getItem('eMail') || '';
+        // API呼び出し
+        await fetch('/api/register_lent_record', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                inst_id: instID,
+                location: location,
+                gid: GID,
+                date_lent: dateLent,
+                date_return_expected: dateReturnExpected,
+                email: eMail,
+                return_request: 0
+            })
+        });
+        // 遷移
+        if (nextAction === 'end') {
+            window.location.href = '/';
+        } else if (nextAction === 'next') {
+            window.location.href = '/scan_QRcode.html';
+        }
+    }
+    document.getElementById('confirmBorrowBtn').onclick = function() {
+        registerLentRecord('end');
+    };
+    document.getElementById('nextBookBtn').onclick = function() {
+        registerLentRecord('next');
+    };
+    document.getElementById('cancelBtn').onclick = function() {
+        window.location.href = '/';
+    };
     // ボタンのイベントは後ほど実装
     </script>
 </body>

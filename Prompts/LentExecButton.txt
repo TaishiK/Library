@@ -1,0 +1,19 @@
+/template/exec_borrow.html上の「貸し出して次の書籍へ」、「貸し出して終了」ボタンの動作内容を定義します。
+１. 共通動作～どちらのボタンを押したときも下記の内容から動作が始まります。
+    Libraries.dbの　T05_Lent_Records テーブルにアクセスし下記内容の行を追加します。
+        ① LentID: AutoIncrementです。
+        ② InstID: /templates/scanQRcodeで取得した値InstIDを記録します。
+        ③ Location: T00_InstanceIDsの該当するInstID値の行のLocationNow列の値を記録します。
+        ④ GID: /templates/scan_IDcard.htmlで取得したGIDを記録します。
+        ④ DateLent: 現在の時刻を取得し、"YYYYMMDD HH:MM:SS"形式のTEXT型で記録します。
+        ⑥ DateReturnExpected: PC名を取得し変数SerialNumberに格納します。T04_LocationsのSerialNumberに該当する行のDefurtTerm列の整数に相当する日数を追加した日時を"YYYYMMDD HH:MM:SS"形式のTEXT型で記録します。
+        ⑦ eMail: /templates/scan_IDcard.htmlでLDAPサーバーから取得したメールアドレスを記録します。
+        ⑧ ReturnRequest: 初期値として整数0を記録します。
+２．個別動作～上記の共通動作後の各ボタンの動作を定義します。
+    １）「貸し出して終了」ボタン：/templates/main_menu.htmlに遷移します。
+    ２）「貸し出して次の書籍へ」ボタン：/templates/scan_QRcode.htmlに遷移します。
+
+＃これで一旦、リクエスト、PC名の取得と図書館場所、eMailの取得ができず記録されていない模様。
+
+Python3 app.py を実行し動作確認しました。T05_Lent_Recordsテーブルを確認すると、Location, GID, eMail　が記録されていませんでした。
+GIDと,eMailは/templates/scan_IDcard.htmlで取得した値です。LocationはPC名（Javascriptならos.hostname()関数で取得）でT04_LocationsテーブルのSerialNumber列が該当する行のLocation列の値です。必要な修正を実装して下さい。

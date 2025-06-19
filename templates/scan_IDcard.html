@@ -187,6 +187,9 @@
        if (userInfo.success) {
            communicateMessage2.innerText = `eMail: ${userInfo.mail || 'N/A'}`;
            console.log('LDAP User Info:', userInfo);
+          // GIDとeMailをlocalStorageに保存
+           localStorage.setItem('GID', GID);
+           localStorage.setItem('eMail', userInfo.mail || '');
            // LDAP認証成功時にQRコード画面へ遷移
            window.location.href = '/scan_QRcode.html';
        } else {
