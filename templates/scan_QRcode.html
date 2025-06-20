@@ -79,8 +79,20 @@
             const val = document.getElementById('externalInput').value.trim();
             if (val) {
                 window.InstID = val;
-                // 遷移時にInstIDをクエリパラメータで渡す
-                window.location.href = `/exec_borrow.html?instid=${encodeURIComponent(val)}`;
+                // FlagQRによる遷移先分岐
+                const flag = localStorage.FlagQR;
+                let nextUrl = '';
+                if (flag === 'LEND') {
+                    nextUrl = `/exec_borrow.html?instid=${encodeURIComponent(val)}`;
+                } else if (flag === 'RETURN') {
+                    nextUrl = `/exec_return.html?instid=${encodeURIComponent(val)}`;
+                } else if (flag === 'SHELF') {
+                    nextUrl = `/show_shelfname.html?instid=${encodeURIComponent(val)}`;
+                } else {
+                    // デフォルトはmain_menu画面
+                    nextUrl = `/main_menu.html`;
+                }
+                window.location.href = nextUrl;
             }
         }
     </script>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>書籍返却</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .return-cancel-btn {
+            position: absolute;
+            top: 24px;
+            right: 32px;
+            padding: 10px 24px;
+            font-size: 1em;
+            background: #e57373;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .book-info-area {
+            margin: 80px auto 0 auto;
+            max-width: 500px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #bbb;
+            padding: 32px 24px 24px 24px;
+            text-align: center;
+        }
+        .thumbnail-area {
+            margin-bottom: 18px;
+        }
+        .return-btns {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 48px;
+        }
+        .return-btns button {
+            font-size: 1.3em;
+            padding: 18px 36px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .return-btns .next-btn {
+            background: #1976d2;
+            color: #fff;
+        }
+        .return-btns .finish-btn {
+            background: #388e3c;
+            color: #fff;
+        }
+    </style>
+    <script src="/static/js/common_bookinfo.js"></script>
+</head>
+<body>
+    <button class="return-cancel-btn" onclick="window.location.href='/'">返却中止</button>
+    <div class="book-info-area">
+        <div class="thumbnail-area" id="thumbnailArea"></div>
+        <div id="bookDetails">書籍情報を取得中...</div>
+    </div>
+    <div class="return-btns">
+        <button class="next-btn">返却して次の書籍へ</button>
+        <button class="finish-btn">返却し終了</button>
+    </div>
+    <script>
+    // クエリパラメータからinstid取得
+    function getInstID() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('instid');
+    }
+    const instID = getInstID();
+    // 書籍情報表示
+    window.addEventListener('DOMContentLoaded', () => {
+        showBookInfo(instID, 'bookDetails', 'thumbnailArea');
+    });
+    // ボタンイベント（仮: 画面遷移やAPI呼び出しは要件に応じて実装）
+    document.querySelector('.next-btn').onclick = function() {
+        window.location.href = '/scan_QRcode.html';
+    };
+    document.querySelector('.finish-btn').onclick = function() {
+        window.location.href = '/main_menu.html';
+    };
+    </script>
+</body>
+</html>

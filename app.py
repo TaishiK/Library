@@ -213,6 +213,10 @@ def scan_qrcode():
 def exec_borrow():
     return render_template('exec_borrow.html')
 
+@app.route('/exec_return.html')
+def exec_return():
+    return render_template('exec_return.html')
+
 @app.route('/control_menu')
 def control_menu():
     return render_template('control_menu.html')

@@ -1,0 +1,21 @@
+/templates/exec_return.htmlの構成を定義します。
+遷移元の/templates/scan_QRcode.htmlで取得した外部入力値InstIDを検索キーとしてデータベースLibraries.dbの
+テーブル T00_INstanceIDsから該当するInstanceID行のISBNを取得、このISBNをキーにしてT01_ISBNsテーブルの
+該当する書籍情報 (Title ,Author, Publisher)を取得、/templates/exec_return.html上に表示します。また、
+/static/thumbnailsに　取得したISBN値に一致するファイルISBN.jpgが存在する場合、その画像も
+/templates/exec_return.html上に表示して下さい。
+
+画面の右上にはボタン「返却中止」ボタンを配置、このボタンを押したときは/templates/main_menu.htmlに画面遷移
+して下さい。
+画面の下には大き目のボタンを２つ配置、左のボタンには「返却して次の書籍へ」、右のボタンには「返却し終了」と
+ラベルして下さい。
+
+
+/templates/main_menu.htmlで「貸出」ボタンを押したときは/scan_IDcard.htmlとscan_QRcode.html経由で
+exec_borrow.htmlに書籍情報が正しく表示されるのですが、「返却」ボタンを押したときは、scan_QRcode.htmlは
+経由しますが、exec_return.htmlには　「Not　Found　The requested URL was not found on the server.
+If you entered the URL manually please check your spelling and try again」と表示されます。これは
+exec_return.htmlに書かれているデータベースから書籍情報を取得するロジックに誤りがあるためと思います。
+exec_borrow.htmlに書かれている書籍情報取得ロジックは正常に動作していますので、これをexec_borrow.htmlから
+切り出し別ファイルとし、exec_borrow.html及びexec_return.htmlからそれぞれ呼び出すようにプログラムを
+修正することは可能ですか？

@@ -55,6 +55,7 @@
             background: #1976d2;
         }
     </style>
+    <script src="/static/js/common_bookinfo.js"></script>
 </head>
 <body>
     <div class="container">
@@ -88,44 +89,10 @@
     const GID = localStorage.getItem('GID') || '';
     const eMail = localStorage.getItem('eMail') || '';
 
-    // 書籍情報取得API
-    async function fetchBookInfo(instID) {
-        // Flask APIを想定
-        const res = await fetch(`/api/instance_info/${encodeURIComponent(instID)}`);
-        if (!res.ok) return null;
-        return await res.json();
-    }
-    async function showBookInfo() {
-        const details = document.getElementById('bookDetails');
-        const thumbArea = document.getElementById('thumbnailArea');
-        if (!instID) {
-            details.innerHTML = '<p>インスタンスIDが指定されていません。</p>';
-            thumbArea.innerHTML = '';
-            return;
-        }
-        const data = await fetchBookInfo(instID);
-        if (!data || !data.success) {
-            details.innerHTML = '<p>該当する書籍情報が見つかりません。</p>';
-            thumbnailArea.innerHTML = '';
-            return;
-        }
-        // 書籍情報表示
-        details.innerHTML = `
-            <div><b>インスタンスID:</b> ${data.instance_id}</div>
-            <div><b>ISBN:</b> ${data.isbn}</div>
-            <div><b>書籍名:</b> ${data.title}</div>
-            <div><b>著者:</b> ${data.author}</div>
-            <div><b>出版社:</b> ${data.publisher}</div>
-            <div><b>発行年:</b> ${data.issue_year}</div>
-        `;
-        // サムネイル表示
-        if (data.thumbnail_exists && data.thumbnail_url) {
-            thumbnailArea.innerHTML = `<img src="${data.thumbnail_url}" alt="書影" class="thumbnail-img">`;
-        } else {
-            thumbnailArea.innerHTML = '<div>該当の書影はありません</div>';
-        }
-    }
-    showBookInfo();
+    // 共通の書籍情報取得ロジックを利用
+    window.addEventListener('DOMContentLoaded', () => {
+        showBookInfo(instID, 'bookDetails', 'thumbnailArea');
+    });
 
     // 共通：貸出レコード登録API
     async function registerLentRecord(nextAction) {

@@ -9,6 +9,28 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         // console.log('#gotoControlMenu button not found on this page.'); // デバッグ用
     }
+    const lendingButton = document.getElementById('lendingButton');
+    if (lendingButton) {
+        lendingButton.addEventListener('click', () => {
+            localStorage.FlagQR = 'LEND';
+            window.location.href = '/scan_IDcard.html';
+        });
+    }
+    const returnButton = document.getElementById('returnButton');
+    if (returnButton) {
+        returnButton.addEventListener('click', () => {
+            localStorage.FlagQR = 'RETURN';
+            window.location.href = '/scan_QRcode.html';
+        });
+    }
+
+    const shelfCheckButton = document.getElementById('shelfCheckButton');
+    if (shelfCheckButton) {
+        shelfCheckButton.addEventListener('click', () => {
+            localStorage.FlagQR = 'SHELF';
+            window.location.href = '/scan_QRcode.html';
+        });
+    }
 
     // --- control_menu.html 用 ---
     const gotoBookRegistrationButton = document.getElementById('gotoBookRegistration');

@@ -10,7 +10,7 @@
     <header class="main-menu-header">
         <div class="header-left">
             <button type="button" id="gotoControlMenu" class="btn btn-small">管理メニュー</button>
-            <button type="button" class="btn btn-small">棚番号確認</button>
+            <button type="button" class="btn btn-small" id="shelfCheckButton">棚番号確認</button>
         </div>
         <div class="header-right">
             <button type="button" class="btn btn-small">終了</button>
@@ -23,11 +23,15 @@
     </main>
 
     <footer class="main-menu-footer">
-
-        <button type="button" class="btn btn-large" id="lendingButton" onclick="location.href='/scan_IDcard.html'">貸出</button>
-        <button type="button" class="btn btn-large">返却</button>
+        <button type="button" class="btn btn-large" id="lendingButton">貸出</button>
+        <button type="button" class="btn btn-large" id="returnButton">返却</button>
     </footer>
 
+    <script>
+        // 棚番号確認ボタンにIDを付与
+        const shelfCheckBtn = document.querySelector('.header-left button.btn.btn-small:nth-child(2)');
+        if (shelfCheckBtn) shelfCheckBtn.id = 'shelfCheckButton';
+    </script>
     <script src="/static/js/navigation.js" defer></script>
 </body>
 </html>
