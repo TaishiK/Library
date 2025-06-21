@@ -19,3 +19,14 @@ exec_return.htmlに書かれているデータベースから書籍情報を取�
 exec_borrow.htmlに書かれている書籍情報取得ロジックは正常に動作していますので、これをexec_borrow.htmlから
 切り出し別ファイルとし、exec_borrow.html及びexec_return.htmlからそれぞれ呼び出すようにプログラムを
 修正することは可能ですか？
+
+/templates/exec_return.htmlの「返却し終了」「返却して次の書籍へ」各ボタンを押した時の動作を定義します。
+1. 各ボタンの共通動作
+　Libraries.dbのT05_Lent_Recordsテーブルから該当するInstID値の行を検索、LentID, Location, GID, 
+  DateLent の各値をLocalStorageに格納した後に、この行を削除します。 T05_Return_Records　には
+  新しい行を追加し、自動取得するReturnIDに加え先にLocalStorageに格納したLentID, Location, GID, DateLent,
+  の各値を書込み、更にDateReturn列には現在の時刻を取得、YYYYMMDD HHMMSSの形式で書込みます。Reference列は
+  通常何も記入しません。（例外は別途指定します。）
+2. 各ボタンの個別動作
+　１）「返却し終了」ボタン～上記の共通動作のあと、画面を/templates/main_menu.htmlに遷移します。
+　２）「返却して次の書籍へ」～上記の共通動作のあと、画面を/templates/scan_QRcode.htmlに遷移します。

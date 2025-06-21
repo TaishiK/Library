@@ -519,24 +519,33 @@ def api_register_book():
         # 今回はシンプルにInstance登録失敗のエラーを返す
         return jsonify({"error": "Failed to register book instance"}), 500
 
-#@app.route('/api/return_book', methods=['POST'])
-#def api_return_book():
-#    data = request.get_json()
-#    employee_id = data.get('employee_id')
-#    isbn = data.get('isbn')
-
-#    if not employee_id or not isbn:
-###        return jsonify({"error": "社員IDとISBNは必須です"}), 400
-
-#    db = get_db()
-
-    # TODO: 返却処理のロジックを実装する
-    # 1. 社員IDとISBNを元に、貸出情報を検索する
-    # 2. 貸出情報が存在する場合、返却処理を行う
-    # 3. 貸出情報が存在しない場合、エラーを返す
-
-    # ダミーの返却処理
-#    return jsonify({"success": True, "message": f"社員ID: {employee_id}, ISBN: {isbn} の書籍を返却しました (実際には処理は行われていません)"})
+# APIエンドポイント: 返却処理
+@app.route('/api/return_book', methods=['POST'])
+def api_return_book():
+    data = request.get_json()
+    inst_id = data.get('inst_id')
+    if not inst_id:
+        return jsonify({'success': False, 'error': 'inst_id is required'})
+    db = get_db()
+    # 1. T05_Lent_Recordsから該当行取得
+    lent_row = db.execute('SELECT * FROM T05_Lent_Records WHERE InstID = ?', (inst_id,)).fetchone()
+    if not lent_row:
+        return jsonify({'success': False, 'error': '貸出レコードが見つかりません'})
+    # 2. 必要な値をlocalStorage相当で返す
+    lent_info = {
+        'LentID': lent_row['LentID'],
+        'Location': lent_row['Location'],
+        'GID': lent_row['GID'],
+        'DateLent': lent_row['DateLent']
+    }
+    # 3. T05_Lent_Recordsから該当行を削除
+    db.execute('DELETE FROM T05_Lent_Records WHERE LentID = ?', (lent_row['LentID'],))
+    # 4. T06_Return_Recordsに新規追加
+    now = datetime.now().strftime('%Y%m%d %H%M%S')
+    db.execute('INSERT INTO T06_Return_Records (LentID, InstID, Location, GID, DateLent, DateReturn, Reference) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        (lent_row['LentID'], lent_row['InstID'], lent_row['Location'], lent_row['GID'], lent_row['DateLent'], now, ''))
+    db.commit()
+    return jsonify({'success': True, 'lent_info': lent_info})
 
 # APIエンドポイント: インスタンス情報取得
 @app.route('/api/instance_info/<instid>', methods=['GET'])
@@ -580,6 +589,21 @@ CREATE TABLE IF NOT EXISTS T05_Lent_Records (
     DateReturnExpected TEXT,
     eMail TEXT,
     ReturnRequest INTEGER
+);
+"""
+
+# T06_Return_Recordsテーブル（返却記録）をDBスキーマに追加。
+SCHEMA_SQL += """
+CREATE TABLE IF NOT EXISTS T06_Return_Records (
+    ReturnID INTEGER PRIMARY KEY AUTOINCREMENT,
+    LentID INTEGER,
+    InstID TEXT,
+    Location TEXT,
+    GID TEXT,
+    DateLent TEXT,
+    DateReturn TEXT,
+    Reference TEXT,
+    FOREIGN KEY (LentID) REFERENCES T05_Lent_Records(LentID)
 );
 """
 
@@ -636,6 +660,13 @@ def get_location_by_serial():
     row = cur.fetchone()
     location = row['Location'] if row else ''
     return jsonify({'location': location})
+
+@app.route('/api/check_lent_status')
+def api_check_lent_status():
+    instid = request.args.get('instid')
+    db = get_db()
+    row = db.execute('SELECT 1 FROM T05_Lent_Records WHERE InstID = ?', (instid,)).fetchone()
+    return jsonify({'exists': bool(row)})
 
 if __name__ == '__main__':
     #init_db() # init_dbは起動時に一度だけ実行されれば良い

@@ -75,25 +75,48 @@
                 }
             });
         };
-        function handleInput() {
+        async function checkLentStatus(instID) {
+            const res = await fetch(`/api/check_lent_status?instid=${encodeURIComponent(instID)}`);
+            if (!res.ok) return null;
+            return await res.json();
+        }
+        async function handleInput() {
             const val = document.getElementById('externalInput').value.trim();
-            if (val) {
-                window.InstID = val;
-                // FlagQRによる遷移先分岐
-                const flag = localStorage.FlagQR;
-                let nextUrl = '';
-                if (flag === 'LEND') {
-                    nextUrl = `/exec_borrow.html?instid=${encodeURIComponent(val)}`;
-                } else if (flag === 'RETURN') {
-                    nextUrl = `/exec_return.html?instid=${encodeURIComponent(val)}`;
-                } else if (flag === 'SHELF') {
-                    nextUrl = `/show_shelfname.html?instid=${encodeURIComponent(val)}`;
-                } else {
-                    // デフォルトはmain_menu画面
-                    nextUrl = `/main_menu.html`;
-                }
-                window.location.href = nextUrl;
+            if (!val) return;
+            // 先頭3文字チェック
+            if (val.startsWith('978') || val.startsWith('192')) {
+                alert('２段バーコードをスキャンしています。\nQRコードをスキャンして下さい。');
+                window.location.href = '/';
+                return;
             }
+            window.InstID = val;
+            const flag = localStorage.FlagQR;
+            if (flag === 'LENT' || flag === 'RETURN') {
+                const status = await checkLentStatus(val);
+                if (flag === 'LENT' && status && status.exists) {
+                    alert('この書籍は貸出し中です。一旦返却処理を行うと貸出しできます。');
+                    window.location.href = '/main_menu.html';
+                    return;
+                }
+                if (flag === 'RETURN' && status && !status.exists) {
+                    alert('この書籍は返却済です。貸出しされていません');
+                    window.location.href = '/main_menu.html';
+                    return;
+                }
+            }
+            // FlagQRによる遷移先分岐
+            let nextUrl = '';
+            if (flag === 'LENT') {
+                nextUrl = `/exec_borrow.html?instid=${encodeURIComponent(val)}`;
+            } else if (flag === 'RETURN') {
+                nextUrl = `/exec_return.html?instid=${encodeURIComponent(val)}`;
+            } else if (flag === 'SHELF') {
+                nextUrl = `/show_shelfname.html?instid=${encodeURIComponent(val)}`;
+            } else {
+                // デフォルトはmain_menu画面
+                nextUrl = `/exec_borrow.html?instid=${encodeURIComponent(val)}`;
+            }
+            window.location.href = nextUrl;
         }
     </script>
 </body>

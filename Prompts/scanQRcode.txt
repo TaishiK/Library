@@ -5,4 +5,17 @@
 リクエスト２
 １）/templates/scan_QRcode.htmlの画面中央に/static/images/ScanQRcode.jpgを配置して下さい。
 ２）/templates/scan_QRcode.htmlの画面左下にボタン「メインメニュー」を作成、これを押すと/templates/main_menu.htmlに画面遷移するようにして下さい。
-３）/templates/scan_QRcode.htmlの右上に外部入力を待受けるテキストボックスを作成し、/templates/scan_QRcode.htmlに画面遷移した時は、このテキストボックスにカーソルを移動して下さい。
+３）/templates/scan_QRcode.htmlの右上に外部入力を待受けるテキストボックスを作成し、
+  /templates/scan_QRcode.htmlに画面遷移した時は、このテキストボックスにカーソルを移動して下さい。
+
+  /templates/scan_QRcode.htmlの外部入力externalInputにInstID値が入力された時、
+  FlagQR = 'LEND'であればT05_Lent_Recordsテーブルに一致するInstIDがないことを確認、もしあった場合は
+  アラートで「この書籍は貸出し中です。一旦返却処理を行うと貸出しできます。」と表示、OKボタンがおされたら
+  /templates/main_menu.htmlに遷移して下さい。
+　FlagQR = 'RETURN'であればT05_Lent_Recordsテーブルに一致するInstIDがあることを確認、もしない場合は
+  アラートで「この書籍は返却済です。貸出しされていません」と表示、OKボタンがおされたら
+  /templates/main_menu.htmlに遷移して下さい。
+
+    /templates/scan_QRcode.htmlの外部入力externalInputにInstID値が入力された時、下記のチェックを最初に行ってください。
+    その文字列の先頭３文字が'978'または'192'の場合、アラートで「２段バーコードをスキャンしています。
+    QRコードをスキャンして下さい。」と表示、OKボタンがおされたら/templates/main_menu.htmlに遷移して下さい。
