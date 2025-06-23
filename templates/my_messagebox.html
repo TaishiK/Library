@@ -1,0 +1,65 @@
+<!-- /templates/my_messagebox.html: カスタムメッセージボックス共通部品 -->
+<div id="customModal" style="display:none;">
+  <div id="customModalContent">
+    <p id="customModalMsg"></p>
+    <div id="customModalBtns">
+      <button id="customModalOk" style="display:none;">OK</button>
+      <button id="customModalYes" style="display:none;">はい</button>
+      <button id="customModalNo" style="display:none;">いいえ</button>
+      <button id="customModalCancel" style="display:none;">キャンセル</button>
+    </div>
+  </div>
+</div>
+<style>
+#customModal {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+}
+#customModalContent {
+  background: #fff; width: 70vw; max-width: 600px; padding: 40px 20px;
+  border-radius: 16px; text-align: center; font-size: 2.2em;
+}
+#customModalBtns button {
+  margin: 0 10px; font-size: 1.5em; padding: 0.5em 2em;
+}
+</style>
+<script>
+function showCustomAlert(msg, flagButtons = 1, callback) {
+  document.getElementById('customModalMsg').textContent = msg;
+  // 全ボタン非表示
+  ['customModalOk','customModalYes','customModalNo','customModalCancel'].forEach(id=>{
+    document.getElementById(id).style.display = 'none';
+  });
+  // ボタン表示切替
+  if(flagButtons === 1){
+    document.getElementById('customModalOk').style.display = '';
+  } else if(flagButtons === 2){
+    document.getElementById('customModalYes').style.display = '';
+    document.getElementById('customModalNo').style.display = '';
+  } else if(flagButtons === 3){
+    document.getElementById('customModalYes').style.display = '';
+    document.getElementById('customModalNo').style.display = '';
+    document.getElementById('customModalCancel').style.display = '';
+  }
+  document.getElementById('customModal').style.display = 'flex';
+
+  // コールバック
+  document.getElementById('customModalOk').onclick = function() {
+    document.getElementById('customModal').style.display = 'none';
+    if(callback) callback('ok');
+  };
+  document.getElementById('customModalYes').onclick = function() {
+    document.getElementById('customModal').style.display = 'none';
+    if(callback) callback('yes');
+  };
+  document.getElementById('customModalNo').onclick = function() {
+    document.getElementById('customModal').style.display = 'none';
+    if(callback) callback('no');
+  };
+  document.getElementById('customModalCancel').onclick = function() {
+    document.getElementById('customModal').style.display = 'none';
+    if(callback) callback('cancel');
+  };
+}
+</script>

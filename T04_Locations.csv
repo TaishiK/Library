@@ -1,0 +1,10 @@
+Location,SerialNumber,LibraryName,AdminMail,CloseTime,DefaultTerm,categoryTable,MemberOnly,Department,MonitorType,RemindMail,MailByAutomated
+ATG-105G-5F,JPC2055024X,"よりみち文庫",STC_Library_Support@sony.com,20:00,14,T07_Codes_1st_J_dcml,0,SSS-yorimichi,external,0,0
+ATG-CP-BF1,JPC20648396,"コミチカ図書館",atg-hotspot-info@sony.com,18:00,14,T07_Codes_1st_J_dcml,0,"",extend,0,0
+HQ-13F-E07,JPC20501341,"よりみち文庫",STC_Library_Support@sony.com,17:30,14,T07_Codes_1st_J_dcml,0,"",internal,0,0
+HQ-5F-CART,JPC2055024Z,"よりみち文庫",STC_Library_Support@sony.com,17:30,35,T07_Codes_1st_J_dcml,0,"",external,0,0
+HQ-7F-W07,JPC205524Y,"よりみち文庫",STC_Library_Support@sony.com,17:30,14,T07_Codes_1st_J_dcml,0,"Office Support Service",internal,0,1
+"PORT みなとみらい",JPC20535986,"PORT みなとみらい",sony-port-books@sony.com,20:00,15,T07_Codes_SCMM-PORT,0,"",clone,0,0
+"PORT 品川",JPC20500758,"PORT 品川",sony-port-books@sony.com,17:30,15,T07_Codes_SC-PORT,0,"",clone,0,0
+SCMM-18F-S12,JPC20536209,"SCMM Office 18F Communication Space",minatomiri18f.kizaikashidashiki@sony.com,20:00,3,T07_Codes_1st_J_dcml,0,CSDD,internal,1,1
+KSZ-2-19-7-302,JPC20550247,"TK Library",taishi.kunori@gmail.com,20:00,15,T07_Codes_1st_J_dcml,1,personal,extend,0,0
