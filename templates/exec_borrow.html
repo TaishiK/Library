@@ -120,6 +120,14 @@
         // GIDとeMailはlocalStorageから取得
         const GID = localStorage.getItem('GID') || '';
         const eMail = localStorage.getItem('eMail') || '';
+
+        //console.log('GID = ', GID);
+        //console.log('eMail = ', eMail);
+        //console.log('InstID = ', instID);
+        //console.log('Location = ', location);
+        //console.log('Date Lent = ', dateLent);
+        //console.log('Date Return Expected = ', dateReturnExpected);
+
         // API呼び出し
         await fetch('/api/register_lent_record', {
             method: 'POST',

@@ -1,10 +1,9 @@
 import os
 import sys
-import sqlite3
 import requests
 import xml.etree.ElementTree as ET
 from flask import Flask, g, render_template, request, jsonify
-from datetime import datetime # InstanceID生成用
+from datetime import datetime # instanceid生成用
 import nfc
 import binascii
 import ldap # python-ldap ライブラリをインポート
@@ -17,92 +16,91 @@ import ssl
 from dotenv import load_dotenv
 import socket # ソケット通信のためにインポート
 import platform # プラットフォーム情報取得のためにインポート
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import func, ForeignKey
+from sqlalchemy.orm import relationship
 
-DATABASE = 'Libraries.db'
-
+#DATABASE = 'Libraries.db' # SQLite用のデータベースファイル名
+DATABASE = 'libraries'  # Postgresql用のデータベース名
 app = Flask(__name__, static_folder='static')
 
-app.config['DATABASE'] = DATABASE
+# SQLAlchemy設定
+echo_setting = True  # SQL発行ログを有効化
+def get_db_uri():
+    return 'postgresql+psycopg2://kunori:taishi@localhost:5432/libraries'
 
-# データベース接続を取得する関数
-def get_db():
-    db = getattr(g, '_database', None)
-    if db is None:
-        db = g._database = sqlite3.connect(app.config['DATABASE'])
-        # カラム名でアクセスできるようにする
-        db.row_factory = sqlite3.Row
-    return db
+app.config['SQLALCHEMY_DATABASE_URI'] = get_db_uri()
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SQLALCHEMY_ECHO'] = echo_setting
 
-# アプリケーションコンテキストが終了するときにデータベース接続を閉じる
-@app.teardown_appcontext
-def close_connection(exception):
-    db = getattr(g, '_database', None)
-    if db is not None:
-        db.close()
+db = SQLAlchemy(app)
 
-# データベーススキーマ定義
-SCHEMA_SQL = """
-CREATE TABLE IF NOT EXISTS T00_InstanceIDs (
-    InstanceID TEXT PRIMARY KEY,
-    ISBN TEXT NOT NULL,
-    HitNDLsearch INTEGER,
-    LocateNow TEXT,
-    LocateInit TEXT,
-    CountBorrow INTEGER DEFAULT 0,
-    FOREIGN KEY (ISBN) REFERENCES T01_ISBNs(ISBN)
-);
+# --- モデル定義 ---
+class t01_isbns(db.Model):
+    __tablename__ = 't01_isbns'
+    isbn = db.Column(db.String, primary_key=True)
+    title = db.Column(db.String)
+    author = db.Column(db.String)
+    publisher = db.Column(db.String)
+    issueyear = db.Column(db.String)
+    price = db.Column(db.Numeric)
+    categorynumber = db.Column(db.String)
+    thumbnail = db.Column(db.Integer)
+    # リレーション
+    instances = relationship('t00_instanceids', back_populates='isbn_ref')
 
-CREATE TABLE IF NOT EXISTS T01_ISBNs (
-    ISBN TEXT PRIMARY KEY,
-    Title TEXT,
-    Author TEXT,
-    Publisher TEXT,
-    IssueYear TEXT,
-    Price NUMERIC,
-    categoryNumber TEXT,
-    Thumbnail INTEGER
-);
+class t00_instanceids(db.Model):
+    __tablename__ = 't00_instanceids'
+    instanceid = db.Column(db.String, primary_key=True)
+    isbn = db.Column(db.String, db.ForeignKey('t01_isbns.isbn'), nullable=False)
+    hitndlsearch = db.Column(db.Integer)
+    locatenow = db.Column(db.String)
+    locateinit = db.Column(db.String)
+    countborrow = db.Column(db.Integer, default=0)
+    # リレーション
+    isbn_ref = relationship('t01_isbns', back_populates='instances')
 
-CREATE TABLE IF NOT EXISTS T04_Locations (
-    Location TEXT PRIMARY KEY,
-    SerialNumber TEXT,
-    LibraryName TEXT,
-    AdminMail TEXT,
-    CloseTime TEXT,
-    DefaultTerm INTEGER,
-    categoryTable TEXT,
-    MemberOnly INTEGER,
-    Department TEXT,
-    MonitorType TEXT,
-    RemindMail INTEGER,
-    MailByAutomated INTEGER
-);
-"""
+class t04_locations(db.Model):
+    __tablename__ = 't04_locations'
+    location = db.Column(db.String, primary_key=True)
+    serialnumber = db.Column(db.String)
+    libraryname = db.Column(db.String)
+    adminmail = db.Column(db.String)
+    closetime = db.Column(db.String)
+    defaultterm = db.Column(db.Integer)
+    categorytable = db.Column(db.String)
+    memberonly = db.Column(db.Integer)
+    department = db.Column(db.String)
+    monitortype = db.Column(db.String)
+    remindmail = db.Column(db.Integer)
+    mailbyautomate = db.Column(db.Integer)
 
+class t05_lent_records(db.Model):
+    __tablename__ = 't05_lent_records'
+    lentid = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    instid = db.Column(db.String)
+    location = db.Column(db.String)
+    gid = db.Column(db.String)
+    datelent = db.Column(db.String)
+    datereturnexpected = db.Column(db.String)
+    email = db.Column(db.String)
+    returnrequest = db.Column(db.Integer)
 
-# データベースを初期化する関数
+class t06_return_records(db.Model):
+    __tablename__ = 't06_return_records'
+    returnid = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    lentid = db.Column(db.Integer, db.ForeignKey('t05_lent_records.lentid'))
+    instid = db.Column(db.String)
+    location = db.Column(db.String)
+    gid = db.Column(db.String)
+    datelent = db.Column(db.String)
+    datereturn = db.Column(db.String)
+    reference = db.Column(db.String)
+
+# --- DB初期化関数 ---
 def init_db():
-    # データベースファイルが存在しない場合のみスキーマを作成
-    if not os.path.exists(app.config['DATABASE']):
-        print(f"Initializing database: {app.config['DATABASE']}")
-        with app.app_context():
-            db = get_db()
-            try:
-                # schema.sqlは使わないので直接SCHEMA_SQL変数を実行
-                db.executescript(SCHEMA_SQL)
-                db.commit()
-                print("Database initialized successfully.")
-            except sqlite3.Error as e:
-                print(f"An error occurred during database initialization: {e}")
-            finally:
-                # init_db内で接続を閉じる必要はない (teardown_appcontextで処理される)
-                pass
-    else:
-        print(f"Database {app.config['DATABASE']} already exists.")
-
-
-
-
+    with app.app_context():
+        db.create_all()
 
 #def get_ldap_user_info_python(gid):
 def get_ldap_user_info_python(gid):
@@ -223,20 +221,18 @@ def control_menu():
 
 @app.route('/book_registration')
 def book_registration():
-    # templates/book_registration.html が一覧表示を必要とするため、
-    # 元の index() と同様のデータ取得処理を行う
-    db = get_db()
-    query = """
-    SELECT
-        i.InstanceID, i.ISBN,
-        COALESCE(b.Title, 'N/A') AS Title, COALESCE(b.Author, 'N/A') AS Author,
-        COALESCE(b.Publisher, 'N/A') AS Publisher, COALESCE(b.IssueYear, 'N/A') AS IssueYear,
-        COALESCE(b.Price, 'N/A') AS Price, COALESCE(b.categoryNumber, 'N/A') AS categoryNumber
-    FROM T00_InstanceIDs i
-    LEFT JOIN T01_ISBNs b ON i.ISBN = b.ISBN
-    ORDER BY i.InstanceID DESC;
-    """
-    books = db.execute(query).fetchall()
+    # SQLAlchemyで一覧取得
+    books = db.session.query(
+        t00_instanceids.instanceid,
+        t00_instanceids.isbn,
+        func.coalesce(t01_isbns.title, 'N/A').label('title'),
+        func.coalesce(t01_isbns.author, 'N/A').label('author'),
+        func.coalesce(t01_isbns.publisher, 'N/A').label('publisher'),
+        func.coalesce(t01_isbns.issueyear, 'N/A').label('issueyear'),
+        func.coalesce(t01_isbns.price, 'N/A').label('price'),
+        func.coalesce(t01_isbns.categorynumber, 'N/A').label('categorynumber')
+    ).outerjoin(t01_isbns, t00_instanceids.isbn == t01_isbns.isbn)
+    books = books.order_by(t00_instanceids.instanceid.desc()).all()
     return render_template('book_registration.html', books=books)
 
 # NDL Search API (SRU) から書籍情報を取得する関数
@@ -357,7 +353,7 @@ def fetch_from_ndl(isbn):
                      # ディレクトリが存在しない場合は作成
                      os.makedirs(thumbnails_dir, exist_ok=True)
 
-                     # 保存ファイル名 (ISBN.jpg) - isbn 変数はハイフン除去済み
+                     # 保存ファイル名 (isbn.jpg) - isbn 変数はハイフン除去済み
                      thumbnail_filename = f"{isbn}.jpg"
                      thumbnail_save_path = os.path.join(thumbnails_dir, thumbnail_filename)
 
@@ -396,7 +392,7 @@ def fetch_from_ndl(isbn):
             "title": title,
             "author": author,
             "publisher": publisher,
-            "issueYear": issue_year,
+            "issueyear": issue_year,
             "price": price,
             "category": category,
             "thumbnail_url": thumbnail_url,
@@ -418,7 +414,7 @@ def api_fetch_book_info():
     isbn = data.get('isbn')
 
     if not isbn:
-        return jsonify({"error": "ISBN is required"}), 400
+        return jsonify({"error": "isbn is required"}), 400
 
     # ハイフンを除去
     isbn_cleaned = isbn.replace('-', '')
@@ -434,7 +430,7 @@ def api_fetch_book_info():
             "title": "",
             "author": "",
             "publisher": "",
-            "issueYear": "",
+            "issueyear": "",
             "price": 0,
             "category": "",
             "thumbnail_url": f"https://ndlsearch.ndl.go.jp/thumbnail/{isbn_cleaned}.jpg",
@@ -442,43 +438,56 @@ def api_fetch_book_info():
             "hit_ndl": False # APIから取得失敗
         })
 
-# データベース操作関数: T01_ISBNs に登録/更新
-def register_isbn_data(db, isbn, title, author, publisher, issueyear, price, category, thumbnail_exists):
-    # SQLiteではUPSERT (INSERT OR REPLACE) を使用
-    query = """
-    INSERT OR REPLACE INTO T01_ISBNs (ISBN, Title, Author, Publisher, IssueYear, Price, categoryNumber, Thumbnail)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?);
-    """
+# --- isbn登録/更新 ---
+def register_isbn_data(isbn, title, author, publisher, issueyear, price, category, thumbnail_exists):
     try:
-        db.execute(query, (isbn, title, author, publisher, issueyear, price, category, 1 if thumbnail_exists else 0))
-        db.commit()
-        print(f"Registered/Updated ISBN: {isbn}")
+        obj = db.session.get(t01_isbns, isbn)
+        if obj:
+            obj.title = title
+            obj.author = author
+            obj.publisher = publisher
+            obj.issueyear = issueyear
+            obj.price = price
+            obj.categorynumber = category
+            obj.Thumbnail = 1 if thumbnail_exists else 0
+        else:
+            obj = t01_isbns(
+                isbn=isbn,
+                title=title,
+                author=author,
+                publisher=publisher,
+                issueyear=issueyear,
+                price=price,
+                categorynumber=category,
+                Thumbnail=1 if thumbnail_exists else 0
+            )
+            db.session.add(obj)
+        db.session.commit()
         return True
-    except sqlite3.Error as e:
-        db.rollback() # エラー時はロールバック
-        print(f"Error registering/updating ISBN {isbn}: {e}")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error registering/updating isbn {isbn}: {e}")
         return False
 
-# データベース操作関数: T00_InstanceIDs に登録
-def register_instance_data(db, isbn, hit_ndl):
-    # InstanceIDを生成 (YYMMDD_HHMMSS)
+# --- instanceid登録 ---
+def register_instance_data(isbn, hit_ndl):
     instance_id = datetime.now().strftime('%y%m%d_%H%M%S')
-    # 初期保管場所 (例)
     locate_init = '登録待機場所'
     locate_now = locate_init
-
-    query = """
-    INSERT INTO T00_InstanceIDs (InstanceID, ISBN, HitNDLsearch, LocateNow, LocateInit)
-    VALUES (?, ?, ?, ?, ?);
-    """
     try:
-        db.execute(query, (instance_id, isbn, 1 if hit_ndl else 0, locate_now, locate_init))
-        db.commit()
-        print(f"Registered InstanceID: {instance_id} for ISBN: {isbn}")
-        return instance_id # 登録したInstanceIDを返す
-    except sqlite3.Error as e:
-        db.rollback() # エラー時はロールバック
-        print(f"Error registering InstanceID for ISBN {isbn}: {e}")
+        obj = t00_instanceids(
+            instanceid=instance_id,
+            isbn=isbn,
+            hitndlsearch=1 if hit_ndl else 0,
+            locatenow=locate_now,
+            locateinit=locate_init
+        )
+        db.session.add(obj)
+        db.session.commit()
+        return instance_id
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error registering instanceid for isbn {isbn}: {e}")
         return None
 
 # APIエンドポイント: 書籍登録
@@ -489,80 +498,72 @@ def api_register_book():
     title = data.get('title')
     author = data.get('author')
     publisher = data.get('publisher')
-    issue_year = data.get('issueYear')
+    issue_year = data.get('issueyear')
     price = data.get('price')
     category = data.get('category')
-    hit_ndl = data.get('hit_ndl', False) # フロントから送られてくる想定
-    thumbnail_exists = data.get('thumbnail_exists', False) # フロントから送られてくる想定
-
+    hit_ndl = data.get('hit_ndl', False)
+    thumbnail_exists = data.get('thumbnail_exists', False)
     if not isbn:
-        return jsonify({"error": "ISBN is required"}), 400
-
-    # ISBNのハイフン除去
+        return jsonify({"error": "isbn is required"}), 400
     isbn_cleaned = isbn.replace('-', '')
-
-    db = get_db()
-
-    # 1. T01_ISBNs に登録/更新
-    isbn_success = register_isbn_data(db, isbn_cleaned, title, author, publisher, issue_year, price, category, thumbnail_exists)
-
+    isbn_success = register_isbn_data(isbn_cleaned, title, author, publisher, issue_year, price, category, thumbnail_exists)
     if not isbn_success:
-        return jsonify({"error": "Failed to register ISBN data"}), 500
-
-    # 2. T00_InstanceIDs に登録
-    instance_id = register_instance_data(db, isbn_cleaned, hit_ndl)
-
+        return jsonify({"error": "Failed to register isbn data"}), 500
+    instance_id = register_instance_data(isbn_cleaned, hit_ndl)
     if instance_id:
         return jsonify({"success": True, "message": "Book registered successfully", "instance_id": instance_id})
     else:
-        # ISBN登録は成功したがInstance登録に失敗した場合、ISBN登録をロールバックすべきか？
-        # 今回はシンプルにInstance登録失敗のエラーを返す
         return jsonify({"error": "Failed to register book instance"}), 500
 
-# APIエンドポイント: 返却処理
+# --- 返却処理API ---
 @app.route('/api/return_book', methods=['POST'])
 def api_return_book():
     data = request.get_json()
     inst_id = data.get('inst_id')
     if not inst_id:
         return jsonify({'success': False, 'error': 'inst_id is required'})
-    db = get_db()
-    # 1. T05_Lent_Recordsから該当行取得
-    lent_row = db.execute('SELECT * FROM T05_Lent_Records WHERE InstID = ?', (inst_id,)).fetchone()
+    lent_row = t05_lent_records.query.filter_by(instid=inst_id).first()
     if not lent_row:
         return jsonify({'success': False, 'error': '貸出レコードが見つかりません'})
-    # 2. 必要な値をlocalStorage相当で返す
     lent_info = {
-        'LentID': lent_row['LentID'],
-        'Location': lent_row['Location'],
-        'GID': lent_row['GID'],
-        'DateLent': lent_row['DateLent']
+        'LentID': lent_row.lentid,
+        'location': lent_row.location,
+        'GID': lent_row.gid,
+        'DateLent': lent_row.datelent
     }
-    # 3. T05_Lent_Recordsから該当行を削除
-    db.execute('DELETE FROM T05_Lent_Records WHERE LentID = ?', (lent_row['LentID'],))
-    # 4. T06_Return_Recordsに新規追加
-    now = datetime.now().strftime('%Y%m%d %H%M%S')
-    db.execute('INSERT INTO T06_Return_Records (LentID, InstID, Location, GID, DateLent, DateReturn, Reference) VALUES (?, ?, ?, ?, ?, ?, ?)',
-        (lent_row['LentID'], lent_row['InstID'], lent_row['Location'], lent_row['GID'], lent_row['DateLent'], now, ''))
-    db.commit()
-    return jsonify({'success': True, 'lent_info': lent_info})
+    print(f"Returning book with inst_id: {inst_id}, LentID: {lent_info['LentID']}, Location: {lent_info['location']}, GID: {lent_info['GID']}, DateLent: {lent_info['DateLent']}")
+    try:
+        db.session.delete(lent_row)
+        now = datetime.now().strftime('%Y%m%d %H%M%S')
+        ret = t06_return_records(
+            lentid=lent_row.lentid,
+            instid=inst_id,
+            location=lent_row.location,
+            gid=lent_row.gid,
+            datelent=lent_row.datelent,
+            datereturn=now,
+            reference=''
+        )
+        db.session.add(ret)
+        db.session.commit()
+        return jsonify({'success': True, 'lent_info': lent_info})
+    except Exception as e:
+        import traceback
+        print('返却処理で例外発生:', str(e))
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)})
 
-# APIエンドポイント: インスタンス情報取得
+# --- インスタンス情報取得API ---
 @app.route('/api/instance_info/<instid>', methods=['GET'])
 def api_instance_info(instid):
-    db = get_db()
-    # T00_InstanceIDsからISBN取得
-    cur = db.execute('SELECT ISBN FROM T00_InstanceIDs WHERE InstanceID = ?', (instid,))
-    row = cur.fetchone()
+    row = t00_instanceids.query.filter_by(instanceid=instid).first()
     if not row:
         return jsonify({'success': False, 'error': '該当するインスタンスIDがありません。'})
-    isbn = row['ISBN']
-    # T01_ISBNsから書籍情報取得
-    cur2 = db.execute('SELECT Title, Author, Publisher, IssueYear FROM T01_ISBNs WHERE ISBN = ?', (isbn,))
-    book = cur2.fetchone()
+    isbn = row.isbn
+    book = t01_isbns.query.filter_by(isbn=isbn).first()
     if not book:
-        return jsonify({'success': False, 'error': '該当するISBNの書籍情報がありません。'})
-    # サムネイル存在チェック
+        return jsonify({'success': False, 'error': '該当するisbnの書籍情報がありません。'})
     thumbnail_path = os.path.join(app.root_path, 'static', 'thumbnails', f'{isbn}.jpg')
     thumbnail_exists = os.path.exists(thumbnail_path)
     thumbnail_url = f'/static/thumbnails/{isbn}.jpg' if thumbnail_exists else None
@@ -570,65 +571,33 @@ def api_instance_info(instid):
         'success': True,
         'instance_id': instid,
         'isbn': isbn,
-        'title': book['Title'],
-        'author': book['Author'],
-        'publisher': book['Publisher'],
-        'issue_year': book['IssueYear'],
+        'title': book.title,
+        'author': book.author,
+        'publisher': book.publisher,
+        'issue_year': book.issueyear,
         'thumbnail_exists': thumbnail_exists,
         'thumbnail_url': thumbnail_url
     })
 
-# T05_Lent_Recordsテーブル作成（AutoIncrement対応）
-SCHEMA_SQL += """
-CREATE TABLE IF NOT EXISTS T05_Lent_Records (
-    LentID INTEGER PRIMARY KEY AUTOINCREMENT,
-    InstID TEXT,
-    Location TEXT,
-    GID TEXT,
-    DateLent TEXT,
-    DateReturnExpected TEXT,
-    eMail TEXT,
-    ReturnRequest INTEGER
-);
-"""
-
-# T06_Return_Recordsテーブル（返却記録）をDBスキーマに追加。
-SCHEMA_SQL += """
-CREATE TABLE IF NOT EXISTS T06_Return_Records (
-    ReturnID INTEGER PRIMARY KEY AUTOINCREMENT,
-    LentID INTEGER,
-    InstID TEXT,
-    Location TEXT,
-    GID TEXT,
-    DateLent TEXT,
-    DateReturn TEXT,
-    Reference TEXT,
-    FOREIGN KEY (LentID) REFERENCES T05_Lent_Records(LentID)
-);
-"""
-
-# PCシリアル取得API（ダミー: 環境変数やホスト名で代用）
+# --- PCシリアル取得API（ダミー: 環境変数やホスト名で代用）
 @app.route('/api/get_pc_serial')
 def get_pc_serial():
     import socket
     serial = os.environ.get('PC_SERIAL') or socket.gethostname()
     return jsonify({'serial': serial})
 
-# 返却予定日計算API
+# --- 返却予定日計算API ---
 @app.route('/api/get_return_expected')
 def get_return_expected():
     serial = request.args.get('serial')
-    db = get_db()
-    # T04_LocationsからDefaultTerm（日数）取得
-    cur = db.execute('SELECT DefaultTerm FROM T04_Locations WHERE SerialNumber = ?', (serial,))
-    row = cur.fetchone()
-    days = int(row['DefaultTerm']) if row and row['DefaultTerm'] else 14
-    from datetime import datetime, timedelta
+    row = t04_locations.query.filter_by(serialnumber=serial).first()
+    days = int(row.defaultterm) if row and row.defaultterm else 14
+    from datetime import timedelta
     dt = datetime.now() + timedelta(days=days)
     date_return_expected = dt.strftime('%Y%m%d %H:%M:%S')
     return jsonify({'date_return_expected': date_return_expected})
 
-# 貸出レコード登録API
+# --- 貸出レコード登録API ---
 @app.route('/api/register_lent_record', methods=['POST'])
 def register_lent_record():
     data = request.get_json()
@@ -639,33 +608,36 @@ def register_lent_record():
     date_return_expected = data.get('date_return_expected')
     email = data.get('email')
     return_request = data.get('return_request', 0)
-    db = get_db()
     try:
-        db.execute('''
-            INSERT INTO T05_Lent_Records (InstID, Location, GID, DateLent, DateReturnExpected, eMail, ReturnRequest)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        ''', (inst_id, location, gid, date_lent, date_return_expected, email, return_request))
-        db.commit()
+        rec = t05_lent_records(
+            instid=inst_id,
+            location=location,
+            gid=gid,
+            datelent=date_lent,
+            datereturnexpected=date_return_expected,
+            email=email,
+            returnrequest=return_request
+        )
+        db.session.add(rec)
+        db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
-        db.rollback()
+        db.session.rollback()
         return jsonify({'success': False, 'error': str(e)})
 
-# PCシリアルからT04_LocationsのLocation列を返すAPI（/api/get_location_by_serial）を追加。
+# --- PCシリアルからlocation取得API ---
 @app.route('/api/get_location_by_serial')
 def get_location_by_serial():
-    serial = socket.gethostname()  # または os.environ.get('PC_SERIAL') で環境変数から取得
-    db = get_db()
-    cur = db.execute('SELECT Location FROM T04_Locations WHERE SerialNumber = ?', (serial,))
-    row = cur.fetchone()
-    location = row['Location'] if row else ''
+    serial = socket.gethostname()
+    row = t04_locations.query.filter_by(serialnumber=serial).first()
+    location = row.location if row else ''
     return jsonify({'location': location})
 
+# --- 貸出状態チェックAPI ---
 @app.route('/api/check_lent_status')
 def api_check_lent_status():
     instid = request.args.get('instid')
-    db = get_db()
-    row = db.execute('SELECT 1 FROM T05_Lent_Records WHERE InstID = ?', (instid,)).fetchone()
+    row = t05_lent_records.query.filter_by(instid=instid).first()
     return jsonify({'exists': bool(row)})
 
 if __name__ == '__main__':
