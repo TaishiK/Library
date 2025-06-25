@@ -1,0 +1,7 @@
+sqlite3でキャメルケースでカラム名を決めたのですが、postgresqlへの移行で全て小文字になってしまい可読性が下がりました。
+一方postgresqlの命名規則は一般にスネークケースのようなので、各カラム名をスネークケースに変更しました。/templates/maim_menu.htmlから「管理メニュー」ボタンを押し、
+/templates/control_menu.htmlに遷移、「日本書籍登録」ボタンを押し、/templates/book_registration.htmlに遷移しようとしたところ、下記エラーとなりました。
+カラム名変更に起因するものと思われます。必要な修正を御願いします。
+sqlalchemy.exc.ArgumentError: relationship 'instances' expects a class or a mapper argument (received: <class 'sqlalchemy.sql.schema.Table'>)
+
+エラーはapp.py の第235行目,books = books.order_by(t00_instance_ids.instance_id.desc()).all()で起きているようです。

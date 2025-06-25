@@ -127,14 +127,14 @@
             <!-- Flaskから渡されたbooksデータを使ってループ処理 -->
             {% for book in books %}
             <tr>
-                <td>{{ book.InstanceID }}</td>
-                <td>{{ book.ISBN }}</td>
-                <td>{{ book.Title }}</td>
-                <td>{{ book.Author }}</td>
-                <td>{{ book.Publisher }}</td>
-                <td>{{ book.IssueYear }}</td>
-                <td>{{ book.Price }}</td>
-                <td>{{ book.categoryNumber }}</td>
+                <td>{{ book.instance_id }}</td>
+                <td>{{ book.isbn }}</td>
+                <td>{{ book.title }}</td>
+                <td>{{ book.author }}</td>
+                <td>{{ book.publisher }}</td>
+                <td>{{ book.issue_year }}</td>
+                <td>{% if book.price %}{{ book.price }}{% else %}N/A{% endif %}</td>
+                <td>{{ book.category_number }}</td>
             </tr>
             {% else %}
             <tr>

@@ -42,59 +42,59 @@ class t01_isbns(db.Model):
     title = db.Column(db.String)
     author = db.Column(db.String)
     publisher = db.Column(db.String)
-    issueyear = db.Column(db.String)
+    issue_year = db.Column(db.String)
     price = db.Column(db.Numeric)
-    categorynumber = db.Column(db.String)
+    category_number = db.Column(db.String)
     thumbnail = db.Column(db.Integer)
     # リレーション
     instances = relationship('t00_instanceids', back_populates='isbn_ref')
 
-class t00_instanceids(db.Model):
+class t00_instance_ids(db.Model):
     __tablename__ = 't00_instanceids'
-    instanceid = db.Column(db.String, primary_key=True)
+    instance_id = db.Column(db.String, primary_key=True)
     isbn = db.Column(db.String, db.ForeignKey('t01_isbns.isbn'), nullable=False)
-    hitndlsearch = db.Column(db.Integer)
-    locatenow = db.Column(db.String)
-    locateinit = db.Column(db.String)
-    countborrow = db.Column(db.Integer, default=0)
+    hit_ndl_search = db.Column(db.Integer)
+    locate_now = db.Column(db.String)
+    locate_init = db.Column(db.String)
+    count_lent = db.Column(db.Integer, default=0)
     # リレーション
     isbn_ref = relationship('t01_isbns', back_populates='instances')
 
 class t04_locations(db.Model):
     __tablename__ = 't04_locations'
     location = db.Column(db.String, primary_key=True)
-    serialnumber = db.Column(db.String)
-    libraryname = db.Column(db.String)
-    adminmail = db.Column(db.String)
-    closetime = db.Column(db.String)
-    defaultterm = db.Column(db.Integer)
-    categorytable = db.Column(db.String)
-    memberonly = db.Column(db.Integer)
+    pc_name = db.Column(db.String)
+    library_name = db.Column(db.String)
+    admin_mail = db.Column(db.String)
+    close_time = db.Column(db.String)
+    default_term = db.Column(db.Integer)
+    category_table = db.Column(db.String)
+    member_only = db.Column(db.Integer)
     department = db.Column(db.String)
-    monitortype = db.Column(db.String)
-    remindmail = db.Column(db.Integer)
-    mailbyautomate = db.Column(db.Integer)
+    monitor_type = db.Column(db.String)
+    remind_mail = db.Column(db.Integer)
+    mail_by_automate = db.Column(db.Integer)
 
 class t05_lent_records(db.Model):
     __tablename__ = 't05_lent_records'
-    lentid = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    lent_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     instid = db.Column(db.String)
     location = db.Column(db.String)
     gid = db.Column(db.String)
-    datelent = db.Column(db.String)
-    datereturnexpected = db.Column(db.String)
+    date_lent = db.Column(db.String)
+    date_return_expected = db.Column(db.String)
     email = db.Column(db.String)
-    returnrequest = db.Column(db.Integer)
+    return_request = db.Column(db.Integer)
 
 class t06_return_records(db.Model):
     __tablename__ = 't06_return_records'
-    returnid = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    lentid = db.Column(db.Integer, db.ForeignKey('t05_lent_records.lentid'))
-    instid = db.Column(db.String)
+    return_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    lent_id = db.Column(db.Integer, db.ForeignKey('t05_lent_records.lent_id'))
+    inst_id = db.Column(db.String)
     location = db.Column(db.String)
     gid = db.Column(db.String)
-    datelent = db.Column(db.String)
-    datereturn = db.Column(db.String)
+    date_lent = db.Column(db.String)
+    date_return = db.Column(db.String)
     reference = db.Column(db.String)
 
 # --- DB初期化関数 ---
@@ -223,16 +223,16 @@ def control_menu():
 def book_registration():
     # SQLAlchemyで一覧取得
     books = db.session.query(
-        t00_instanceids.instanceid,
-        t00_instanceids.isbn,
-        func.coalesce(t01_isbns.title, 'N/A').label('title'),
-        func.coalesce(t01_isbns.author, 'N/A').label('author'),
-        func.coalesce(t01_isbns.publisher, 'N/A').label('publisher'),
-        func.coalesce(t01_isbns.issueyear, 'N/A').label('issueyear'),
-        func.coalesce(t01_isbns.price, 'N/A').label('price'),
-        func.coalesce(t01_isbns.categorynumber, 'N/A').label('categorynumber')
-    ).outerjoin(t01_isbns, t00_instanceids.isbn == t01_isbns.isbn)
-    books = books.order_by(t00_instanceids.instanceid.desc()).all()
+        t00_instance_ids.instance_id.label('InstanceID'),
+        t00_instance_ids.isbn.label('ISBN'),
+        func.coalesce(t01_isbns.title, 'N/A').label('Title'),
+        func.coalesce(t01_isbns.author, 'N/A').label('Author'),
+        func.coalesce(t01_isbns.publisher, 'N/A').label('Publisher'),
+        func.coalesce(t01_isbns.issue_year, 'N/A').label('IssueYear'),
+        func.coalesce(t01_isbns.price, 0).label('Price'),  # 数値型は0でcoalesce
+        func.coalesce(t01_isbns.category_number, 'N/A').label('categoryNumber')
+    ).outerjoin(t01_isbns, t00_instance_ids.isbn == t01_isbns.isbn)
+    books = books.order_by(t00_instance_ids.instance_id.desc()).all()
     return render_template('book_registration.html', books=books)
 
 # NDL Search API (SRU) から書籍情報を取得する関数
@@ -446,9 +446,9 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
             obj.title = title
             obj.author = author
             obj.publisher = publisher
-            obj.issueyear = issueyear
+            obj.issue_year = issueyear
             obj.price = price
-            obj.categorynumber = category
+            obj.category_number = category
             obj.Thumbnail = 1 if thumbnail_exists else 0
         else:
             obj = t01_isbns(
@@ -456,9 +456,9 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
                 title=title,
                 author=author,
                 publisher=publisher,
-                issueyear=issueyear,
+                issue_year=issueyear,
                 price=price,
-                categorynumber=category,
+                category_number=category,
                 Thumbnail=1 if thumbnail_exists else 0
             )
             db.session.add(obj)
@@ -475,12 +475,12 @@ def register_instance_data(isbn, hit_ndl):
     locate_init = '登録待機場所'
     locate_now = locate_init
     try:
-        obj = t00_instanceids(
-            instanceid=instance_id,
+        obj = t00_instance_ids(
+            instance_id=instance_id,
             isbn=isbn,
-            hitndlsearch=1 if hit_ndl else 0,
-            locatenow=locate_now,
-            locateinit=locate_init
+            hit_ndl_search=1 if hit_ndl else 0,
+            locate_now=locate_now,
+            locate_init=locate_init
         )
         db.session.add(obj)
         db.session.commit()
@@ -522,26 +522,26 @@ def api_return_book():
     inst_id = data.get('inst_id')
     if not inst_id:
         return jsonify({'success': False, 'error': 'inst_id is required'})
-    lent_row = t05_lent_records.query.filter_by(instid=inst_id).first()
+    lent_row = t05_lent_records.query.filter_by(inst_id=inst_id).first()
     if not lent_row:
         return jsonify({'success': False, 'error': '貸出レコードが見つかりません'})
     lent_info = {
-        'LentID': lent_row.lentid,
+        'LentID': lent_row.lent_id,
         'location': lent_row.location,
         'GID': lent_row.gid,
-        'DateLent': lent_row.datelent
+        'DateLent': lent_row.date_lent
     }
     print(f"Returning book with inst_id: {inst_id}, LentID: {lent_info['LentID']}, Location: {lent_info['location']}, GID: {lent_info['GID']}, DateLent: {lent_info['DateLent']}")
     try:
         db.session.delete(lent_row)
         now = datetime.now().strftime('%Y%m%d %H%M%S')
         ret = t06_return_records(
-            lentid=lent_row.lentid,
-            instid=inst_id,
+            lent_id=lent_row.lent_id,
+            inst_id=inst_id,
             location=lent_row.location,
             gid=lent_row.gid,
-            datelent=lent_row.datelent,
-            datereturn=now,
+            date_lent=lent_row.date_lent,
+            date_return=now,
             reference=''
         )
         db.session.add(ret)
@@ -557,7 +557,7 @@ def api_return_book():
 # --- インスタンス情報取得API ---
 @app.route('/api/instance_info/<instid>', methods=['GET'])
 def api_instance_info(instid):
-    row = t00_instanceids.query.filter_by(instanceid=instid).first()
+    row = t00_instance_ids.query.filter_by(instanceid=instid).first()
     if not row:
         return jsonify({'success': False, 'error': '該当するインスタンスIDがありません。'})
     isbn = row.isbn
@@ -590,7 +590,7 @@ def get_pc_serial():
 @app.route('/api/get_return_expected')
 def get_return_expected():
     serial = request.args.get('serial')
-    row = t04_locations.query.filter_by(serialnumber=serial).first()
+    row = t04_locations.query.filter_by(pc_name=serial).first()
     days = int(row.defaultterm) if row and row.defaultterm else 14
     from datetime import timedelta
     dt = datetime.now() + timedelta(days=days)
@@ -610,13 +610,13 @@ def register_lent_record():
     return_request = data.get('return_request', 0)
     try:
         rec = t05_lent_records(
-            instid=inst_id,
+            inst_id=inst_id,
             location=location,
             gid=gid,
-            datelent=date_lent,
-            datereturnexpected=date_return_expected,
+            date_lent=date_lent,
+            date_return_expected=date_return_expected,
             email=email,
-            returnrequest=return_request
+            return_request=return_request
         )
         db.session.add(rec)
         db.session.commit()
@@ -629,15 +629,15 @@ def register_lent_record():
 @app.route('/api/get_location_by_serial')
 def get_location_by_serial():
     serial = socket.gethostname()
-    row = t04_locations.query.filter_by(serialnumber=serial).first()
+    row = t04_locations.query.filter_by(pc_name=serial).first()
     location = row.location if row else ''
     return jsonify({'location': location})
 
 # --- 貸出状態チェックAPI ---
 @app.route('/api/check_lent_status')
 def api_check_lent_status():
-    instid = request.args.get('instid')
-    row = t05_lent_records.query.filter_by(instid=instid).first()
+    inst_id = request.args.get('instid')
+    row = t05_lent_records.query.filter_by(inst_id=instid).first()
     return jsonify({'exists': bool(row)})
 
 if __name__ == '__main__':
