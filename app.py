@@ -47,10 +47,10 @@ class t01_isbns(db.Model):
     category_number = db.Column(db.String)
     thumbnail = db.Column(db.Integer)
     # リレーション
-    instances = relationship('t00_instanceids', back_populates='isbn_ref')
+    instances = relationship('t00_instance_ids', back_populates='isbn_ref')
 
 class t00_instance_ids(db.Model):
-    __tablename__ = 't00_instanceids'
+    __tablename__ = 't00_instance_ids'
     instance_id = db.Column(db.String, primary_key=True)
     isbn = db.Column(db.String, db.ForeignKey('t01_isbns.isbn'), nullable=False)
     hit_ndl_search = db.Column(db.Integer)
@@ -78,7 +78,7 @@ class t04_locations(db.Model):
 class t05_lent_records(db.Model):
     __tablename__ = 't05_lent_records'
     lent_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    instid = db.Column(db.String)
+    inst_id = db.Column(db.String)
     location = db.Column(db.String)
     gid = db.Column(db.String)
     date_lent = db.Column(db.String)
@@ -223,14 +223,14 @@ def control_menu():
 def book_registration():
     # SQLAlchemyで一覧取得
     books = db.session.query(
-        t00_instance_ids.instance_id.label('InstanceID'),
-        t00_instance_ids.isbn.label('ISBN'),
-        func.coalesce(t01_isbns.title, 'N/A').label('Title'),
-        func.coalesce(t01_isbns.author, 'N/A').label('Author'),
-        func.coalesce(t01_isbns.publisher, 'N/A').label('Publisher'),
-        func.coalesce(t01_isbns.issue_year, 'N/A').label('IssueYear'),
+        t00_instance_ids.instance_id,
+        t00_instance_ids.isbn,
+        func.coalesce(t01_isbns.title, 'N/A').label('title'),
+        func.coalesce(t01_isbns.author, 'N/A').label('author'),
+        func.coalesce(t01_isbns.publisher, 'N/A').label('publisher'),
+        func.coalesce(t01_isbns.issue_year, 'N/A').label('issue_year'),
         func.coalesce(t01_isbns.price, 0).label('Price'),  # 数値型は0でcoalesce
-        func.coalesce(t01_isbns.category_number, 'N/A').label('categoryNumber')
+        func.coalesce(t01_isbns.category_number, 'N/A').label('category_number')
     ).outerjoin(t01_isbns, t00_instance_ids.isbn == t01_isbns.isbn)
     books = books.order_by(t00_instance_ids.instance_id.desc()).all()
     return render_template('book_registration.html', books=books)
@@ -557,7 +557,7 @@ def api_return_book():
 # --- インスタンス情報取得API ---
 @app.route('/api/instance_info/<instid>', methods=['GET'])
 def api_instance_info(instid):
-    row = t00_instance_ids.query.filter_by(instanceid=instid).first()
+    row = t00_instance_ids.query.filter_by(instance_id=instid).first()
     if not row:
         return jsonify({'success': False, 'error': '該当するインスタンスIDがありません。'})
     isbn = row.isbn
@@ -571,10 +571,10 @@ def api_instance_info(instid):
         'success': True,
         'instance_id': instid,
         'isbn': isbn,
-        'title': book.title,
+        'title': book.title,    
         'author': book.author,
         'publisher': book.publisher,
-        'issue_year': book.issueyear,
+        'issue_year': book.issue_year,
         'thumbnail_exists': thumbnail_exists,
         'thumbnail_url': thumbnail_url
     })
@@ -637,7 +637,7 @@ def get_location_by_serial():
 @app.route('/api/check_lent_status')
 def api_check_lent_status():
     inst_id = request.args.get('instid')
-    row = t05_lent_records.query.filter_by(inst_id=instid).first()
+    row = t05_lent_records.query.filter_by(inst_id=inst_id).first()
     return jsonify({'exists': bool(row)})
 
 if __name__ == '__main__':
