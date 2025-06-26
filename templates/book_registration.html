@@ -133,7 +133,7 @@
                 <td>{{ book.author }}</td>
                 <td>{{ book.publisher }}</td>
                 <td>{{ book.issue_year }}</td>
-                <td>{% if book.price %}{{ book.price }}{% else %}N/A{% endif %}</td>
+                <td>{% if book.price is not none %}{{ book.price | int | string | replace(',', ',') }}{% else %}N/A{% endif %}</td>
                 <td>{{ book.category_number }}</td>
             </tr>
             {% else %}

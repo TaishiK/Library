@@ -41,3 +41,8 @@
         「メインメニュー」      「棚情報管理」              「QRラベル印刷」
 
 宜しくお願い致します・
+
+
+/templates/main_menu.htmlを改造します。PC名を取得し、それをキーにt04_locationsテーブルのpc_nameカラムを検索、該当行のlibrary_nameカラムの
+値を取得します。画面中央に表示されている/static/images/BoyGirlBooks.jpgの上部に「ようこそ、」＋ '取得したlibrary_name値' + 「へ！」
+と表示するようにして下さい。
