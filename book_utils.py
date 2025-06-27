@@ -113,6 +113,29 @@ def fetch_from_ndl(isbn):
 
 def register_isbn_data(isbn, title, author, publisher, issueyear, price, category, thumbnail_exists):
     try:
+        # 型変換・必須値チェック
+        if price in (None, ""): price = 0
+        try:
+            price = float(price)
+        except Exception:
+            price = 0
+        thumbnail_val = bool(thumbnail_exists)
+        # サムネイル画像が必要ならサーバー保存を保証
+        if thumbnail_val:
+            thumbnails_dir = os.path.join(app.root_path, 'static', 'thumbnails')
+            os.makedirs(thumbnails_dir, exist_ok=True)
+            thumbnail_filename = f"{isbn}.jpg"
+            thumbnail_save_path = os.path.join(thumbnails_dir, thumbnail_filename)
+            if not os.path.exists(thumbnail_save_path):
+                thumbnail_url = f"https://ndlsearch.ndl.go.jp/thumbnail/{isbn}.jpg"
+                try:
+                    img_response = requests.get(thumbnail_url, stream=True, timeout=10)
+                    img_response.raise_for_status()
+                    with open(thumbnail_save_path, 'wb') as f:
+                        for chunk in img_response.iter_content(1024):
+                            f.write(chunk)
+                except Exception as e:
+                    print(f"Error downloading thumbnail for {isbn}: {e}")
         obj = db.session.get(t01_isbns, isbn)
         if obj:
             obj.title = title
@@ -121,7 +144,7 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
             obj.issue_year = issueyear
             obj.price = price
             obj.category_number = category
-            obj.thumbnail = True if thumbnail_exists else False
+            obj.thumbnail = thumbnail_val
         else:
             obj = t01_isbns(
                 isbn=isbn,
@@ -131,15 +154,15 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
                 issue_year=issueyear,
                 price=price,
                 category_number=category,
-                thumbnail=True if thumbnail_exists else False
+                thumbnail=thumbnail_val
             )
             db.session.add(obj)
         db.session.commit()
-        return True
+        return True, None
     except Exception as e:
         db.session.rollback()
         print(f"Error registering/updating isbn {isbn}: {e}")
-        return False
+        return False, str(e)
 
 def register_instance_data(isbn, hit_ndl):
     import socket
@@ -148,20 +171,21 @@ def register_instance_data(isbn, hit_ndl):
     locate_init = row.location if row else '登録待機場所'
     locate_now = locate_init
     try:
+        hit_ndl_val = bool(hit_ndl)  # ←ここを修正
         obj = t00_instance_ids(
             instance_id=datetime.now().strftime('%y%m%d_%H%M%S'),
             isbn=isbn,
-            hit_ndl_search=True if hit_ndl else False,
+            hit_ndl_search=hit_ndl_val,
             locate_now=locate_now,
             locate_init=locate_init
         )
         db.session.add(obj)
         db.session.commit()
-        return obj.instance_id
+        return obj.instance_id, None
     except Exception as e:
         db.session.rollback()
         print(f"Error registering instanceid for isbn {isbn}: {e}")
-        return None
+        return None, str(e)
 
 def api_fetch_book_info():
     data = request.get_json()
@@ -199,11 +223,17 @@ def api_register_book():
     if not isbn:
         return jsonify({"error": "isbn is required"}), 400
     isbn_cleaned = isbn.replace('-', '')
-    isbn_success = register_isbn_data(isbn_cleaned, title, author, publisher, issue_year, price, category, thumbnail_exists)
+    # 型変換・必須値チェック
+    if price in (None, ""): price = 0
+    try:
+        price = float(price)
+    except Exception:
+        price = 0
+    isbn_success, isbn_err = register_isbn_data(isbn_cleaned, title, author, publisher, issue_year, price, category, thumbnail_exists)
     if not isbn_success:
-        return jsonify({"error": "Failed to register isbn data"}), 500
-    instance_id = register_instance_data(isbn_cleaned, hit_ndl)
+        return jsonify({"error": "Failed to register isbn data", "detail": isbn_err}), 500
+    instance_id, inst_err = register_instance_data(isbn_cleaned, hit_ndl)
     if instance_id:
         return jsonify({"success": True, "message": "Book registered successfully", "instance_id": instance_id})
     else:
-        return jsonify({"error": "Failed to register book instance"}), 500
+        return jsonify({"error": "Failed to register book instance", "detail": inst_err}), 500

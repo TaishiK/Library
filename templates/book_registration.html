@@ -48,7 +48,17 @@
             cursor: pointer;
         }
 
-        /* button[type="submit"] のスタイルは style.css に移動 */
+        button[type="submit"] { /* Style for the register button */
+             display: block;
+             width: 100px;
+             margin: 20px auto;
+             padding: 10px;
+             background-color: #4CAF50;
+             color: white;
+             border: none;
+             cursor: pointer;
+        }
+
 
         table {
             width: 80%;
@@ -99,14 +109,10 @@
         <label for="category">書籍分類:</label>
         <input type="text" id="category" name="category"><br><br>
 
-        <!-- API結果保持用 (非表示) -->
-        <input type="hidden" id="hit_ndl" name="hit_ndl" value="0">
-        <input type="hidden" id="thumbnail_exists" name="thumbnail_exists" value="0">
+        <input type="hidden" id="thumbnail_exists" name="thumbnail_exists" value="false">
+        <input type="hidden" id="hit_ndl" name="hit_ndl" value="false">
 
-        <div class="form-actions">
-            <a href="/control_menu" class="btn btn-secondary">管理メニュー</a>
-            <button type="submit" onclick="registerBook(event)" class="btn btn-primary">登録</button>
-        </div>
+        <button type="submit" onclick="registerBook(event)">登録</button> 
     </form>
 
     <h2>登録データ一覧</h2>
@@ -124,8 +130,7 @@
             </tr>
         </thead>
         <tbody>
-            <!-- Flaskから渡されたbooksデータを使ってループ処理 -->
-            {% for book in books %}
+        {% for book in books %}
             <tr>
                 <td>{{ book.instance_id }}</td>
                 <td>{{ book.isbn }}</td>
@@ -133,14 +138,12 @@
                 <td>{{ book.author }}</td>
                 <td>{{ book.publisher }}</td>
                 <td>{{ book.issue_year }}</td>
-                <td>{% if book.price is not none %}{{ book.price | int | string | replace(',', ',') }}{% else %}N/A{% endif %}</td>
+                <td>{{ book.price }}</td>
                 <td>{{ book.category_number }}</td>
             </tr>
-            {% else %}
-            <tr>
-                <td colspan="8" style="text-align: center;">登録されている書籍はありません。</td>
-            </tr>
-            {% endfor %}
+        {% else %}
+            <tr><td colspan="8" style="text-align:center; color:#888;">登録データはありません</td></tr>
+        {% endfor %}
         </tbody>
     </table>
 
@@ -166,89 +169,194 @@
             document.getElementById("bookThumbnail").src = "";
             document.getElementById("thumbnailMessage").style.display = "none";
             document.getElementById("thumbnailMessage").textContent = "";
-            // hidden inputの値をリセット
-            document.getElementById("hit_ndl").value = "0";
-            document.getElementById("thumbnail_exists").value = "0";
 
+
+            // SRU API のベース URL とパラメータ
+            const baseUrl = "https://ndlsearch.ndl.go.jp/api/sru";
+            const params = new URLSearchParams({
+                operation: "searchRetrieve",
+                version: "1.2",
+                recordSchema: "dcndl", // DC-NDLスキーマを指定
+                onlyBib: "true",
+                recordPacking: "xml",
+                // CQL クエリ: ISBN で検索し、データソースを NDL-OPAC に限定
+                query: `isbn="${isbn}" AND dpid="iss-ndl-opac"`
+            });
+            const apiUrl = `${baseUrl}?${params.toString()}`;
+            console.log("Request URL (SRU):", apiUrl); // デバッグ用にURLを出力
 
             try {
-                // Flask APIエンドポイントにリクエスト
-                const response = await fetch('/api/fetch_book_info', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ isbn: isbn }),
-                });
-
+                const response = await fetch(apiUrl);
                 if (!response.ok) {
                     throw new Error(`HTTP error! status: ${response.status}`);
                 }
+                const xmlText = await response.text();
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(xmlText, "text/xml");
 
-                const data = await response.json();
+                // 名前空間を解決するためのヘルパー関数 (SRU/DC-NDL 用に修正)
+                const nsResolver = (prefix) => {
+                    const ns = {
+                        'sru': 'http://www.loc.gov/zing/srw/', // SRU 名前空間
+                        'rdf': 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                        'dcndl': 'http://ndl.go.jp/dcndl/terms/', // DC-NDL 名前空間
+                        'dc': 'http://purl.org/dc/elements/1.1/',
+                        'dcterms': 'http://purl.org/dc/terms/',
+                        // 必要に応じて他の名前空間を追加
+                    };
+                    // デフォルト名前空間は SRU レスポンスでは通常不要なため削除
+                    return ns[prefix] || null;
+                };
 
-                if (data.error) {
-                    alert(`書籍情報の取得エラー: ${data.error}`);
+                // XPathを使用して要素や属性を取得するヘルパー関数
+                const evaluateXPath = (path, contextNode = xmlDoc, resultType = XPathResult.FIRST_ORDERED_NODE_TYPE) => {
+                    return xmlDoc.evaluate(path, contextNode, nsResolver, resultType, null);
+                };
+                 const evaluateXPathAll = (path, contextNode = xmlDoc) => {
+                    // Use ORDERED_NODE_ITERATOR_TYPE for iterating through multiple nodes
+                    return xmlDoc.evaluate(path, contextNode, nsResolver, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+                };
+
+
+                // 書籍リソース要素を取得 (SRU/DC-NDL形式を想定)
+                // SRUレスポンスの構造に合わせてXPathを修正
+                const bibResourceNode = evaluateXPath("//sru:recordData/rdf:RDF/dcndl:BibResource", xmlDoc).singleNodeValue;
+
+                if (!bibResourceNode) { // bibResourceNode をチェック
+                    alert("該当する書籍情報が見つかりませんでした。");
+                    return;
+                }
+                // 以降のXPathはこの bibResourceNode を基点にする
+                const item = bibResourceNode; // 変数名を合わせる (もしくは bibResourceNode のまま使う)
+
+                if (!item) {
+                    alert("該当する書籍情報が見つかりませんでした。");
                     return;
                 }
 
-                // フォームに値を設定
-                document.getElementById("title").value = data.title || "";
-                document.getElementById("author").value = data.author || "";
-                document.getElementById("publisher").value = data.publisher || "";
-                document.getElementById("issueYear").value = data.issueYear || "";
-                document.getElementById("category").value = data.category || "";
-                document.getElementById("price").value = data.price || "";
+                // 各情報をXPathで取得 (DC-NDL スキーマに合わせて修正)
+                // 注意: dcndl:BibResource (item) を基点とするため、XPath の先頭に '.' を付ける
+                const titleNode = evaluateXPath("./dc:title", item).singleNodeValue;
+                // 著者情報は dcndl:creator や dc:creator を確認 (複数ある可能性も考慮)
+                const authorNode = evaluateXPath("./dcndl:creator | ./dc:creator", item).singleNodeValue; // まず最初のものを取得
+                // 出版社取得の XPath をシンプルに変更
+                const publisherNode = evaluateXPath("./dcterms:publisher", item).singleNodeValue;
+                const issuedNode = evaluateXPath("./dcterms:issued", item).singleNodeValue; // 発行年 (YYYY または YYYY-MM-DD)
+                const priceNode = evaluateXPath("./dcndl:price", item).singleNodeValue; // 価格
 
-                // hidden inputにAPI結果フラグを設定
-                document.getElementById("hit_ndl").value = data.hit_ndl ? "1" : "0";
-                document.getElementById("thumbnail_exists").value = data.thumbnail_exists ? "1" : "0";
+                // タイトル取得時に trim() と改行での分割を適用して本体のみ抽出
+                const fullTitleText = titleNode?.textContent || "";
+                console.log("Raw Title Text:", fullTitleText); // 元のテキストをログ出力
+                // 改行で分割し、空でない最初の行を取得して trim()
+                const title = fullTitleText.split('\n')
+                                           .map(part => part.trim()) // 各行を trim
+                                           .find(part => part !== '') || ""; // 空でない最初の行を見つける
+                console.log("Processed Title:", title); // 処理後のタイトルをログ出力
+                const author = authorNode?.textContent || ""; // 著者 (最初のもの)
+                console.log("Author:", author);
+                // 出版社名取得時に trim() と改行での分割を適用して本体のみ抽出
+                const fullPublisherText = publisherNode?.textContent || "";
+                console.log("Raw Publisher Text:", fullPublisherText); // 元のテキストをログ出力
+                // 改行で分割し、空でない最初の行を取得して trim()
+                const publisher = fullPublisherText.split('\n')
+                                                   .map(part => part.trim()) // 各行を trim
+                                                   .find(part => part !== '') || ""; // 空でない最初の行を見つける
+                console.log("Processed Publisher:", publisher); // 処理後の出版社名をログ出力
+                const issued = issuedNode?.textContent || "";
+                const issueYear = issued.match(/^\d{4}/)?.[0] || ""; // YYYY または YYYY-MM-DD から年のみ抽出
+                console.log("Issue Year:", issueYear);
+
+                // --- 書籍分類 (NDC) 取得ロジック (XPath の基点を修正) ---
+                let category = "";
+                // XPath の基点を item (dcndl:BibResource) に変更
+                const subjectIterator = evaluateXPathAll("./dcterms:subject[starts-with(@rdf:resource, 'http://id.ndl.go.jp/class/ndc10/') or starts-with(@rdf:resource, 'http://id.ndl.go.jp/class/ndc9/')]", item);
+                console.log("Subject Iterator:", subjectIterator);
+                let subjectNode;
+                console.log("Attempting to iterate subjects...");
+                while (subjectNode = subjectIterator.iterateNext()) {
+                    console.log("Iterating a subject node...");
+                    const resourceAttr = subjectNode.getAttributeNS('http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'resource');
+                    console.log("Resource Attribute:", resourceAttr);
+                    if (resourceAttr) {
+                        const parts = resourceAttr.split('/');
+                        console.log("Resource Parts:", parts);
+                        const ndcCode = parts[parts.length - 1];
+                        console.log("NDC Code:", ndcCode);
+                        if (ndcCode && /^\d/.test(ndcCode)) {
+                            category = ndcCode.charAt(0);
+                            console.log("Extracted Category:", category);
+                            break;
+                        }
+                    }
+                }
+                // --- 書籍分類取得ロジックここまで ---
+
+                // 価格 (空なら0)
+                let price = 0;
+                const priceValue = priceNode?.textContent || "";
+                console.log("Price Value:", priceValue);
+                if (priceValue !== "") {
+                    // 価格文字列から数値のみを抽出 (例: "1800円" -> 1800)
+                    const priceMatch = priceValue.match(/\d+/);
+                    if (priceMatch) {
+                        const parsedPrice = parseInt(priceMatch[0], 10);
+                        if (!isNaN(parsedPrice)) {
+                            price = parsedPrice;
+                        }
+                    }
+                }
+                console.log("Parsed Price:", price);
+
+
+                // フォームに値を設定
+                document.getElementById("title").value = title;
+                document.getElementById("author").value = author;
+                document.getElementById("publisher").value = publisher;
+                document.getElementById("issueYear").value = issueYear;
+                document.getElementById("category").value = category; // Set category from extracted NDC first digit
+                document.getElementById("price").value = price; // Set price
 
                 // --- 書影表示処理 ---
                 const thumbnailImg = document.getElementById("bookThumbnail");
                 const thumbnailMsg = document.getElementById("thumbnailMessage");
-                const thumbnailUrl = data.thumbnail_url; // APIからのURLを使用
+                const thumbnailUrl = `https://ndlsearch.ndl.go.jp/thumbnail/${isbn}.jpg`;
 
-                if (data.thumbnail_exists && thumbnailUrl) {
-                    thumbnailImg.onload = () => {
-                        thumbnailImg.style.display = "block";
-                        thumbnailMsg.style.display = "none";
-                        thumbnailMsg.textContent = "";
-                    };
-                    thumbnailImg.onerror = () => { // 念のためonerrorも設定
-                        thumbnailImg.style.display = "none";
-                        thumbnailMsg.style.display = "block";
-                        thumbnailMsg.textContent = "書影の表示に失敗しました。";
-                    };
-                    // 既存の src をクリアしてから新しい URL を設定 (キャッシュ対策)
-                    thumbnailImg.src = "";
-                    thumbnailImg.src = thumbnailUrl;
-                } else {
+                // 画像が存在するか確認 (onerror イベントを利用)
+                let thumbnailExistsFlag = false;
+                thumbnailImg.onload = () => {
+                    thumbnailImg.style.display = "block";
+                    thumbnailMsg.style.display = "none";
+                    thumbnailMsg.textContent = "";
+                    thumbnailExistsFlag = true;
+                    document.getElementById("thumbnail_exists").value = "true";
+                };
+                thumbnailImg.onerror = () => {
                     thumbnailImg.style.display = "none";
-                    thumbnailImg.src = "";
                     thumbnailMsg.style.display = "block";
                     thumbnailMsg.textContent = "書影が見つかりません。";
-                }
+                    thumbnailExistsFlag = false;
+                    document.getElementById("thumbnail_exists").value = "false";
+                };
+                // 既存の src をクリアしてから新しい URL を設定 (キャッシュ対策)
+                thumbnailImg.src = "";
+                thumbnailImg.src = thumbnailUrl;
                 // --- 書影表示処理ここまで ---
 
-                if (!data.hit_ndl) {
-                    alert("NDL Search APIで該当する書籍情報が見つかりませんでした。手動で入力してください。");
-                }
+                // NDLヒットフラグもhiddenにセット
+                document.getElementById("hit_ndl").value = "true";
 
             } catch (error) {
                 console.error("書籍情報の取得に失敗しました:", error);
                 alert("書籍情報の取得中にエラーが発生しました。");
-                // エラー時も書影エリアとhidden inputをリセット
+                // エラー時も書影エリアをリセット
                 document.getElementById("bookThumbnail").style.display = "none";
                 document.getElementById("bookThumbnail").src = "";
                 document.getElementById("thumbnailMessage").style.display = "none";
                 document.getElementById("thumbnailMessage").textContent = "";
-                document.getElementById("hit_ndl").value = "0";
-                document.getElementById("thumbnail_exists").value = "0";
             }
         }
 
-        // 書籍データを登録する関数 (バックエンドAPI連携)
+        // 書籍データを登録する関数
         async function registerBook(event) {
             event.preventDefault(); // Prevent default form submission
 
@@ -258,88 +366,62 @@
             const publisher = document.getElementById("publisher").value;
             const issueYear = document.getElementById("issueYear").value;
             const price = document.getElementById("price").value;
-            const category = document.getElementById("category").value;
-            // hidden inputからフラグを取得
-            const hit_ndl = document.getElementById("hit_ndl").value === "1";
-            const thumbnail_exists = document.getElementById("thumbnail_exists").value === "1";
-
+            const category = document.getElementById("category").value; // Get category
 
             // 入力値の検証
             if (!isbn) {
                 alert("ISBNを入力してください（書籍情報取得ボタンを押すか、手動で入力してください）。");
                 return;
             }
-             // 価格が入力されていれば数値かチェック
-            if (price && isNaN(parseFloat(price))) { // parseFloatでチェック
+            if (price && isNaN(price)) {
                 alert("価格は数値で入力してください。");
                 return;
             }
-             if (issueYear && (isNaN(parseInt(issueYear)) || issueYear.length !== 4)) { // 発行年が入力されていれば4桁の数値かチェック
-                 alert("発行年は4桁の数値で入力してください。");
-                 return;
-             }
-
-            const bookData = {
-                isbn: isbn,
-                title: title,
-                author: author,
-                publisher: publisher,
-                issueYear: issueYear,
-                price: price ? parseFloat(price) : null, // 数値に変換、空ならnull
-                category: category,
-                hit_ndl: hit_ndl,
-                thumbnail_exists: thumbnail_exists
-            };
-
-            try {
-                // Flask APIエンドポイントにリクエスト
-                const response = await fetch('/api/register_book', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(bookData),
-                });
-
-                const result = await response.json();
-
-                if (response.ok && result.success) {
-                    alert(`登録成功！ InstanceID: ${result.instance_id}`);
-                    clearForm(); // フォームをクリア
-                    window.location.reload(); // ページをリロードして一覧を更新
-                } else {
-                    alert(`登録失敗: ${result.error || '不明なエラー'}`);
-                }
-
-            } catch (error) {
-                console.error("書籍の登録に失敗しました:", error);
-                alert("書籍の登録中にエラーが発生しました。");
+            if (issueYear && isNaN(issueYear)) {
+                alert("発行年は数値で入力してください。");
+                return;
             }
+
+            // API経由で登録
+            try {
+                const thumbnail_exists = document.getElementById("thumbnail_exists").value === "true";
+                const hit_ndl = document.getElementById("hit_ndl").value === "true";
+                const res = await fetch("/api/register_book", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        isbn: isbn,
+                        title: title,
+                        author: author,
+                        publisher: publisher,
+                        issueyear: issueYear,
+                        price: price,
+                        category: category,
+                        thumbnail_exists: thumbnail_exists,
+                        hit_ndl: hit_ndl
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert("登録が完了しました。");
+                    window.location.reload();
+                } else {
+                    alert("登録に失敗しました: " + (data.detail || data.error || "不明なエラー"));
+                }
+            } catch (e) {
+                alert("API通信エラー: " + e);
+            }
+            // localStorage保存・テーブル表示は廃止
+            // saveBookData(instanceID, isbn, title, author, publisher, issueYear, price, category);
+            // displayBookData();
+            clearForm();
         }
 
-        // generateInstanceID, saveBookData, displayBookData は不要になったので削除
-
-        // clearForm は残す (hidden inputのリセットも追加)
-        function clearForm() {
-            document.getElementById("isbn").value = "";
-            document.getElementById("title").value = "";
-            document.getElementById("author").value = "";
-            document.getElementById("publisher").value = "";
-            document.getElementById("issueYear").value = "";
-            document.getElementById("price").value = "";
-            document.getElementById("category").value = "";
-            // 書影表示エリアとhidden inputをリセット
-            document.getElementById("bookThumbnail").style.display = "none";
-            document.getElementById("bookThumbnail").src = "";
-            document.getElementById("thumbnailMessage").style.display = "none";
-            document.getElementById("thumbnailMessage").textContent = "";
-            document.getElementById("hit_ndl").value = "0";
-            document.getElementById("thumbnail_exists").value = "0";
-        }
-
-        // window.onload は displayBookData を呼ばなくなったので不要 (一覧はサーバーサイドでレンダリング)
-        // window.onload = function() {
-        // };
+        // ページ読み込み時にデータを表示
+        window.onload = function() {
+            // addInitialData(); // 初期データ投入はコメントアウト
+            // displayBookData(); // localStorage表示は廃止
+        };
 
     </script>
 </body>

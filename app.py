@@ -19,6 +19,8 @@ import platform # プラットフォーム情報取得のためにインポー�
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, ForeignKey
 from sqlalchemy.orm import relationship
+import logging 
+logging.getLogger('salalchemy.engine').setLevel(logging.WARNING)  # SQLAlchemyのログレベルをINFO or WARNINGに設定
 from models import db, t01_isbns, t00_instance_ids, t04_locations, t05_lent_records, t06_return_records
 from ldap_utils import get_ldap_user_info_python
 from book_utils import api_fetch_book_info, api_register_book, register_isbn_data, register_instance_data
