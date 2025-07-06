@@ -27,6 +27,16 @@ class t00_instance_ids(db.Model):
     # リレーション
     isbn_ref = relationship('t01_isbns', back_populates='instances')
 
+class t02_users(db.Model):
+    __tablename__ = 't02_users'
+    gid = db.Column(db.String, primary_key=True)
+    email = db.Column(db.String)
+
+class t03_administrators(db.Model):
+    __tablename__ = 't03_administrators'
+    gid = db.Column(db.String, primary_key=True)
+    location = db.Column(db.String)
+
 class t04_locations(db.Model):
     __tablename__ = 't04_locations'
     location = db.Column(db.String, primary_key=True)
@@ -63,3 +73,23 @@ class t06_return_records(db.Model):
     date_lent = db.Column(db.String)
     date_return = db.Column(db.String)
     reference = db.Column(db.String)
+
+class t07_categories_ndc(db.Model):
+    __tablename__ = 't07_categories_ndc'
+    category_id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    category = db.Column(db.String)
+
+class t07_categories_c(db.Model):
+    __tablename__ = 't07_categories_c'
+    category_id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    category = db.Column(db.String)
+    
+class t07_categories_port_sc(db.Model):
+    __tablename__ = 't07_categories_port_sc'
+    category_id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    category  = db.Column(db.String)
+    
+class t07_categories_port_scmm(db.Model):
+    __tablename__ = 't07_categories_port_scmm'
+    category_id = db.Column(db.Integer, primary_key=True, autoincrement=False)
+    category = db.Column(db.String)
