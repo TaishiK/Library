@@ -66,6 +66,7 @@
 
   const startTime = Date.now(); // 開始時刻を取得
 
+
   do {
     let GID = '';
     let kanaName = '';
@@ -166,8 +167,43 @@
    }
   }
 
-  if(GID.length == 10) {
+ if(GID.length == 10) {
    console.log('GID obtained:', GID);
+  if (localStorage.FlagID === 'CONTROL') {// 管理者メニューへの遷移      
+       //console.log('Navigating to /control_menu.html');
+       const AdminStatus = await checkAdministratorExist(GID);
+       if (AdminStatus === null) {
+           communicateMessage.innerText = '管理者情報の取得に失敗しました。';
+           console.error('Failed to check administrator existence for GID:', GID);
+           return;
+       }
+       if (!AdminStatus.exists) {
+            communicateMessage.innerText = 'この社員番号は管理者に登録されていません。管理者登録してからご利用下さい。';
+            console.error('GID not found in administrators:', GID);
+       } else {
+           communicateMessage.innerText = `GID: ${GID} は管理者に登録されています。`;
+           console.log('GID found in t03_administrators:', GID);
+           window.location.href = '/control_menu.html';
+           return;
+          }
+       window.location.href = '/control_menu.html';
+       return;
+   } else if (GID.startsWith('ZP')) { 
+        const userStatus = await checkUserExist(GID);
+        if (userStatus === null) {
+            communicateMessage.innerText = 'ユーザー情報の取得に失敗しました。';
+            console.error('Failed to check user existence for GID:', GID);
+            return;
+       } else if (!userStatus.exists) {
+            communicateMessage.innerText = 'この社員番号はユーザーに登録されていません。ユーザー登録してからご利用下さい。';
+            console.error('GID not found in t02_users:', GID);
+            return;
+        } else {
+            communicateMessage.innerText = `GID: ${GID} はユーザーに登録されています。`;
+            console.log('GID found in t02_users:', GID);
+            return
+        }
+    } else {
 
    // サーバーサイドのAPIエンドポイントを呼び出す
    fetch(`/api/ldap_user/${GID}`)
@@ -201,7 +237,7 @@
        console.error('Error fetching LDAP user info:', error);
        communicateMessage.innerText = `LDAP情報取得エラー: ${error.message}`;
      });
-   
+    }
    console.log('[Reading a FeliCa Card] End');
    break; // GIDが取得できたらループを終了
   }
@@ -211,7 +247,16 @@
 
  }
 
-
+async function checkAdministratorExist(gid) {
+  const res = await fetch(`/api/check_administrator_exists/${encodeURIComponent(gid)}`);
+  if (!res.ok) return null;
+  return await res.json();// exists: True/False
+}
+async function checkUserExist(gid) {
+  const res = await fetch(`/api/check_user_exists/${encodeURIComponent(gid)}`);
+  if (!res.ok) return null;
+  return await res.json();// exists: True/False
+}
 
  function _def_val(param, def){
   return (param === undefined) ? def : param;

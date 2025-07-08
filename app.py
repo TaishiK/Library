@@ -93,7 +93,7 @@ def exec_borrow():
 def exec_return():
     return render_template('exec_return.html')
 
-@app.route('/control_menu')
+@app.route('/control_menu.html')
 def control_menu():
     return render_template('control_menu.html')
 
@@ -212,6 +212,18 @@ def get_location_by_serial():
 @app.route('/api/check_lent_status')
 def check_lent_status():
     return api_check_lent_status()
+
+# --- 管理者チェックAPI ---
+@app.route('/api/check_administrator_exists/<gid>', methods=['GET'])
+def check_administrator_exists(gid):
+    from id_utils import api_check_administrator_exists
+    return api_check_administrator_exists(gid)
+
+# --- ユーザーチェックAPI ---
+@app.route('/api/check_user_exists/<gid>', methods=['GET'])
+def check_user_exists(gid):
+    from id_utils import api_check_user_exists
+    return api_check_user_exists(gid)
 
 if __name__ == '__main__':
     #init_db() # init_dbは起動時に一度だけ実行されれば良い

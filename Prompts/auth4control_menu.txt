@@ -1,0 +1,10 @@
+/templates/main_menu.htmlにおいて「管理メニュー」ボタンを押すと、現状は
+/static/js/navigation.js の第4～９行目の記述に従いFlagID＝’CONTROL'を
+localStoraageに格納し/templates/scan_IDcard.htmlに遷移します。その後、
+IDカードの値を読込み、LDAPサーバーでメールアドレスを取得、
+FlagIDの値が'CONTROL'のため/templates/control_menu.htmlに遷移します。
+これをFlagID = 'CONTROL'の場合、社員証読込後格納した変数GIDの値が、データベースlibrariesの 
+t03_administratorsテーブルのカラムgidに一致する値がある場合、/templates/control_menu.htmlに
+遷移するようにして下さい。カラムgidに一致する値がない場合、/templates/my_messagebox.htmlに
+「この社員番号は管理者に登録されていません。（改行）管理者登録してからご利用下さい。」と表示、
+「OK」ボタンを押すと/templates/main_menu.htmlに遷移して下さい。

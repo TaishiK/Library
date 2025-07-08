@@ -4,7 +4,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (gotoControlMenuButton) {
         gotoControlMenuButton.addEventListener('click', () => {
             console.log('Navigating to /control_menu'); // デバッグ用ログ
-            window.location.href = '/control_menu';
+            localStorage.FlagID = 'CONTROL';
+            window.location.href = '/scan_IDcard.html';
         });
     } else {
         // console.log('#gotoControlMenu button not found on this page.'); // デバッグ用
@@ -12,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const lendingButton = document.getElementById('lendingButton');
     if (lendingButton) {
         lendingButton.addEventListener('click', () => {
+            console.log('Navigating to /scan_IDcard'); // デバッグ用ログ
+            localStorage.FlagID = 'LEND';
             localStorage.FlagQR = 'LEND';
             window.location.href = '/scan_IDcard.html';
         });

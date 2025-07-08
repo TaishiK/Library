@@ -67,3 +67,4 @@ def api_check_lent_status():
     inst_id = request.args.get('instid')
     row = t05_lent_records.query.filter_by(inst_id=inst_id).first()
     return jsonify({'exists': bool(row)})
+
