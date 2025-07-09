@@ -1,0 +1,3 @@
+/templates/scan_IDcard.html の第183行目に記述したshowCustomAlert関数（/templates/my_messagebox.htmlで定義）の
+Yes/No各ボタンにより次の画面遷移を条件分岐指定します。Yesボタンが押された時は /templates/register_administrator.html へ、
+Noボタンが押された時は /templates/main_menu.htmlへ画面遷移するように修正して下さい。

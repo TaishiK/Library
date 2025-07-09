@@ -8,3 +8,5 @@ t03_administratorsテーブルのカラムgidに一致する値がある場合�
 遷移するようにして下さい。カラムgidに一致する値がない場合、/templates/my_messagebox.htmlに
 「この社員番号は管理者に登録されていません。（改行）管理者登録してからご利用下さい。」と表示、
 「OK」ボタンを押すと/templates/main_menu.htmlに遷移して下さい。
+
+→　Rooコード動作せず自力解決

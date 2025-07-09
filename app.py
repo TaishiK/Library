@@ -97,6 +97,14 @@ def exec_return():
 def control_menu():
     return render_template('control_menu.html')
 
+@app.route('/register_administrator.html')
+def register_administrator():
+    return render_template('register_administrator.html')
+
+@app.route('/register_user.html')
+def register_user():
+    return render_template('register_user.html')
+
 @app.route('/book_registration')
 def book_registration():
     # SQLAlchemyで一覧取得
