@@ -21,7 +21,7 @@ from sqlalchemy import func, ForeignKey
 from sqlalchemy.orm import relationship
 import logging 
 logging.getLogger('salalchemy.engine').setLevel(logging.WARNING)  # SQLAlchemyのログレベルをINFO or WARNINGに設定
-from models import db, t01_isbns, t00_instance_ids, t04_locations, t05_lent_records, t06_return_records
+from models import db, t01_isbns, t00_instance_ids, t02_users, t03_administrators, t04_locations, t05_lent_records, t06_return_records
 from ldap_utils import get_ldap_user_info_python
 from book_utils import api_fetch_book_info, api_register_book, register_isbn_data, register_instance_data
 from lent_utils import api_register_lent_record, api_return_book, api_check_lent_status
@@ -232,6 +232,67 @@ def check_administrator_exists(gid):
 def check_user_exists(gid):
     from id_utils import api_check_user_exists
     return api_check_user_exists(gid)
+@app.route('/api/locations', methods=['GET'])
+def api_get_locations():
+    try:
+        locations = t04_locations.query.all()
+        location_list = [{"location": loc.location, "library_name": loc.library_name} for loc in locations]
+        return jsonify({"success": True, "locations": location_list}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/register_user', methods=['POST'])
+def api_register_user():
+    data = request.get_json()
+    gid = data.get('gid')
+    email = data.get('email')
+
+    if not gid or not email:
+        return jsonify({"success": False, "error": "GID and email are required"}), 400
+
+    try:
+        user = t02_users.query.filter_by(gid=gid).first()
+        if user:
+            # 既存ユーザーのメールアドレスを更新
+            user.email = email
+            db.session.commit()
+            return jsonify({"success": True, "message": "User email updated successfully"}), 200
+        else:
+            # 新規ユーザーを登録
+            new_user = t02_users(gid=gid, email=email)
+            db.session.add(new_user)
+            db.session.commit()
+            return jsonify({"success": True, "message": "User registered successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/register_administrator', methods=['POST'])
+def api_register_administrator():
+    data = request.get_json()
+    gid = data.get('gid')
+    location = data.get('location')
+
+    if not gid or not location:
+        return jsonify({"success": False, "error": "GID and location are required"}), 400
+
+    try:
+        administrator = t03_administrators.query.filter_by(gid=gid).first()
+        if administrator:
+            # 既存管理者のlocationを更新
+            administrator.location = location
+            db.session.commit()
+            return jsonify({"success": True, "message": "Administrator location updated successfully"}), 200
+        else:
+            # 新規管理者を登録
+            new_administrator = t03_administrators(gid=gid, location=location)
+            db.session.add(new_administrator)
+            db.session.commit()
+            return jsonify({"success": True, "message": "Administrator registered successfully"}), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"success": False, "error": str(e)}), 500
+
 
 if __name__ == '__main__':
     #init_db() # init_dbは起動時に一度だけ実行されれば良い
