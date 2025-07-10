@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ユーザー登録</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4; /* style.css の body 背景色と合わせる */
+        }
+        .container {
+            text-align: center;
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 90%;
+        }
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            font-size: 1.2em;
+            margin-right: 15px;
+            color: #555;
+        }
+        .input-group input[type="email"] {
+            padding: 10px;
+            font-size: 1.2em;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 70%;
+            max-width: 300px;
+        }
+        .form-actions {
+            display: flex;
+            justify-content: center; /* ボタンを中央揃え */
+            gap: 30px; /* ボタン間のスペースを広げる */
+            margin-top: 40px; /* フォーム要素とのスペース */
+        }
+        .btn-large {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            min-width: 150px; /* ボタンの最小幅を確保 */
+        }
+    </style>
+</head>
+<body>
+    <button type="button" id="gotoMainMenu" class="btn btn-small back-button">戻る</button>
+    <script src="/static/js/navigation.js" defer></script>
+
+    <div class="container">
+        <h1>メールアドレスを入力して下さい。</h1>
+        <div class="input-group">
+            <label for="emailInput">e-mail:</label>
+            <input type="email" id="emailInput" name="email" autofocus inputmode="email">
+        </div>
+
+        <div class="form-actions">
+            <button type="button" id="cancelButton" class="btn btn-secondary btn-large">キャンセル</button>
+            <button type="button" id="registerButton" class="btn btn-primary btn-large">登録</button>
+        </div>
+    </div>
+
+    {% include 'my_messagebox.html' %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const emailInput = document.getElementById('emailInput');
+            if (emailInput) {
+                emailInput.focus();
+            }
+
+            document.getElementById('cancelButton').addEventListener('click', function() {
+                window.location.href = '/';
+            });
+
+            document.getElementById('registerButton').addEventListener('click', async function() {
+                const gid = localStorage.getItem('GID');
+                const email = emailInput.value;
+
+                if (!gid) {
+                    showCustomAlert('社員番号(GID)が取得できませんでした。', 1, function() {
+                        window.location.href = '/'; // メインメニューへ戻る
+                    });
+                    return;
+                }
+
+                if (!email) {
+                    showCustomAlert('メールアドレスを入力してください。', 1);
+                    return;
+                }
+
+                try {
+                    const response = await fetch('/api/register_user', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ gid: gid, email: email })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        showCustomAlert('登録しました！', 1, function() {
+                            window.location.href = '/scan_QRcode.html';
+                        });
+                    } else {
+                        showCustomAlert('登録に失敗しました: ' + result.error, 1);
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showCustomAlert('通信エラーが発生しました。', 1);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

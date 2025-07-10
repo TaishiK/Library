@@ -1,0 +1,26 @@
+/templates/register_user.html の内容を記述します。
+このページは/templates/scan_IDcard.html で取得した社員番号GIDが
+特定の値の時、新規ユーザーをマニュアルで登録するためのものです。
+
+画面中央に 'メールアドレスを入力して下さい。' と大きく表示、その下に
+件名として「e-mail:」その右横にテキストボックスを配置、フォーカスを
+置き、半角英数入力モードで待機させます。
+
+
+引き続き/templates/register_user.html の機能を作成します。
+画面下部左に大き目の「キャンセル」ボタン、画面下部右に大き目の「登録」ボタンを配置、
+「キャンセル」ボタンが押された時は/templates/main_menu.html へ遷移、
+「登録」ボタンが押された時は、/templates/scan_IDcard.htmlで取得したGIDと、
+上記のテキストボックスに入力されたメールアドレスをデータベースlibrariesの
+t02_usersテーブルのカラム、gid 及び email にそれぞれ書き込んで下さい。
+書込みが成功したら、my_messagebox.htmlで「登録しました！」と表示、OKボタンを押したら
+/templates/scan_QRcode.html へ遷移させて下さい。
+
+/templates/uregister_user.html でテキストボックスにメールアドレスを入力、
+「登録」ボタンを押すとshowCustomAlertで「登録に失敗しました: name 't02_users' is not defined」
+と返されました。ブラウザの開発者用ツールのコンソールには
+register_user.html:174   POST http://127.0.0.1:5000/api/register_user 500 (INTERNAL SERVER ERROR)
+(anonymous) @ register_user.html:174
+register_user.html:174 Fetch failed loading: POST "http://127.0.0.1:5000/api/register_user".
+
+と表示されています。原因を特定し修正を御願いします。

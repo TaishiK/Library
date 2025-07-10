@@ -1,3 +1,20 @@
 /templates/scan_IDcard.html の第183行目に記述したshowCustomAlert関数（/templates/my_messagebox.htmlで定義）の
 Yes/No各ボタンにより次の画面遷移を条件分岐指定します。Yesボタンが押された時は /templates/register_administrator.html へ、
 Noボタンが押された時は /templates/main_menu.htmlへ画面遷移するように修正して下さい。
+
+
+これから/templates/register_administrators.htmlの内容を記述します。
+
+画面中央に '担当する図書館の場所を選択して下さい。' と大きく表示、その下に
+件名として「場所:」その右横にコンボボックスを配置、その内容はデータベースlibrariesの
+t04_locationsテーブルのカラム「location」,「library_name」の２列とし、プルダウンで
+選択できるようにして下さい。
+
+引き続き/templates/register_administrator.html の機能を作成します。
+画面下部左に大き目の「キャンセル」ボタン、画面下部右に大き目の「登録」ボタンを配置、
+「キャンセル」ボタンが押された時は/templates/main_menu.html へ遷移、
+「登録」ボタンが押された時は、/templates/scan_IDcard.htmlで取得したGIDと、
+上記のコンボボックスで選択されたlocationの値をデータベースlibrariesの
+t03_administratorsテーブルのカラム、gid 及び location にそれぞれ書き込んで下さい。
+書込みが成功したら、my_messagebox.htmlで「登録しました！」と表示、OKボタンを押したら
+/templates/main_menu.html へ遷移させて下さい。

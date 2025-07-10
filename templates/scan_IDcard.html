@@ -188,8 +188,17 @@
                 window.location.href = '/'; // メインメニュー画面へ遷移
                 return;
             });
+            /*showCustomAlert('この社員番号は管理者に登録されていません。 管理者登録してからご利用下さい。 今、管理者登録しますか？', 2, function(result) { 
+                if (result === 'yes'){
+                  window.location.href = '/register_administrator.html'; // 管理者登録画面へ遷移
+                  return;              
+                } else if (result === 'no') {
+                  window.location.href = '/'; // メインメニューへ遷移
+                  return;
+               };
+            });*/
        } else {
-           communicateMessage.innerText = `GID: ${GID} は管理者に登録されています。`;
+           //communicateMessage.innerText = `GID: ${GID} は管理者に登録されています。`;
            console.log('GID found in t03_administrators:', GID);
            window.location.href = '/control_menu.html';
            return;
@@ -203,7 +212,7 @@
        } else if (!userStatus.exists) {
             communicateMessage.innerText = 'この社員番号はユーザーに登録されていません。ユーザー登録してからご利用下さい。';
             console.error('GID not found in t02_users:', GID);
-            showCustomAlert('今、ユーザー登録しますか？。', 2, function(result) { 
+            showCustomAlert('この社員番号はユーザーに登録されていません。 ユーザー登録してからご利用下さい。 今、ユーザー登録しますか？', 2, function(result) { 
                 if (result === 'yes'){
                   window.location.href = '/register_user.html'; // ユーザー登録画面へ遷移
                   return;              
