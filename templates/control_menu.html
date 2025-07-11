@@ -10,7 +10,7 @@
     <h1>管理メニュー</h1>
 
     <main class="control-menu-grid">
-        <button type="button" class="btn btn-medium">管理者追加登録</button>
+        <button type="button" id="registerAdministratorButton" class="btn btn-medium">管理者追加登録</button>
         <button type="button" class="btn btn-medium">書籍の引っ越し</button>
         <button type="button" id="gotoBookRegistration" class="btn btn-medium">日本書籍登録</button>
 
@@ -30,7 +30,8 @@
         <button type="button" class="btn btn-medium">棚情報管理</button>
         <button type="button" class="btn btn-medium">QRラベル印刷</button>
     </main>
-
+<!-- 共通カスタムメッセージボックスをインクルード -->
+    {% include 'my_messagebox.html' %}
     <script src="/static/js/navigation.js" defer></script>
 </body>
 </html>

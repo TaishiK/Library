@@ -1,7 +1,6 @@
 /templates/control_menu.html の「管理者追加登録」ボタンが押された時の動作を定義します。
 
-「管理者追加登録」のボタンが押された時、/templates/control_menu.html は閉じ、showCustomAlert関数で
-my_messagebox.html上に「新しく管理者になる人の社員証でタッチして下さい、」と表示します。「OK」ボタンが
-押されたら、FlagID = 'REGISTER_CONTROLLER'をlocalStorageに保存し、/templates/scan_IDcard.html に
-遷移します。新しい管理者のGIDを取得したら、FlagID = 'REGISTER_CONTROLLER'により条件分岐し、
-/templates/register_administrator.html に遷移するように/templates/scan_IDcard.htmlを修正して下さい。
+「管理者追加登録」のボタンが押された時、表示している/templates/control_menu.html から、showCustomAlert関数で
+/templates/my_messagebox.html上に「新しく管理者になる人の社員証でタッチして下さい。」と表示します。この
+/templates/my_messagebox.htmlの「OK」ボタンが押されたら、FlagID = 'ADMINISTRATOR'をlocalStorageに保存し、
+/templates/control_menu.htmlは閉じ、/templates/scan_IDcard.html に遷移します。

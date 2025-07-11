@@ -56,6 +56,19 @@ document.addEventListener('DOMContentLoaded', () => {
         // console.log('#gotoMainMenu button not found on this page.'); // デバッグ用
     }
 
+    const registerAdministratorButton = document.getElementById('registerAdministratorButton');
+    if (registerAdministratorButton) {
+        registerAdministratorButton.addEventListener('click', () => {
+            console.log('管理者追加登録ボタンがクリックされました。');
+            showCustomAlert('新しく管理者になる人の社員証でタッチして下さい。', 1, (result) => {
+                if (result === 'ok') {
+                    localStorage.FlagID = 'ADMINISTRATOR';
+                    window.location.href = '/scan_IDcard.html';
+                }
+            });
+        });
+    }
+
     // --- (任意) その他のボタンに未実装を示すログを追加 ---
     // 例: main_menu.html の他のボタン
     const otherMainMenuButtons = document.querySelectorAll('.main-menu-header button:not(#gotoControlMenu), .main-menu-footer button:not(#lendingButton)');

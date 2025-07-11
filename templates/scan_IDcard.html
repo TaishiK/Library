@@ -203,7 +203,10 @@
            window.location.href = '/control_menu.html';
            return;
           }
-   } else if (GID.startsWith('ZP')| GID === '0000920442') { // ZP社員証の場合t02_usersテーブルでユーザー情報を取得 
+  } else if (localStorage.FlagID === 'ADMINISTRATOR') { 
+        window.location.href = '/register_administrator.html'; // 管理者登録画面へ遷移
+        return;
+  } else if (GID.startsWith('ZP')/*| GID === '0000920442'*/) { // ZP社員証の場合t02_usersテーブルでユーザー情報を取得 
         const userStatus = await checkUserExist(GID);
         if (userStatus === null) {
             communicateMessage.innerText = 'ユーザー情報の取得に失敗しました。';
