@@ -295,5 +295,5 @@ def api_register_administrator():
 
 
 if __name__ == '__main__':
-    #init_db() # init_dbは起動時に一度だけ実行されれば良い
+    init_db() # init_dbは起動時に一度だけ実行されれば良い
     app.run(debug=True) # デバッグモードで起動

@@ -1,8 +1,0 @@
-作成いただいたbook_registration.html を改造します。現在は
-ユーザーがInstanceID以外の項目をマニュアル入力する仕様です。
-これをISBNをキーとして国立国会図書館サーチAPIを使い書籍データを
-取得、各項目に入力するよう変更して下さい。国立国会図書館サーチAPIの
-仕様は下記リンク先をご参照下さい。
-https://ndlsearch.ndl.go.jp/help/api/specifications
-また、参考記事として下記リンク先もご検討下さい。
-https://qiita.com/310kent0/items/ac04d35befffac6b695e

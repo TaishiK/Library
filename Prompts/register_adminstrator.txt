@@ -18,3 +18,7 @@ t04_locationsテーブルのカラム「location」,「library_name」の２列�
 t03_administratorsテーブルのカラム、gid 及び location にそれぞれ書き込んで下さい。
 書込みが成功したら、my_messagebox.htmlで「登録しました！」と表示、OKボタンを押したら
 /templates/main_menu.html へ遷移させて下さい。
+
+/templates/register_administrator.htmlのコンボボックスのプルダウンで選択肢として表示される
+t04_locationsテーブルのカラムは現状「library_name」カラムだけになっています。これを
+t04_locationsテーブルのカラム「location」も表示されるように修正して下さい。

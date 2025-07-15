@@ -24,6 +24,7 @@ class t00_instance_ids(db.Model):
     locate_now = db.Column(db.String)
     locate_init = db.Column(db.String)
     count_lent = db.Column(db.Integer, default=0)
+    own_category_id = db.Column(db.Integer)
     # リレーション
     isbn_ref = relationship('t01_isbns', back_populates='instances')
 
