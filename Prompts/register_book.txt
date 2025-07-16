@@ -39,3 +39,21 @@ https://qiita.com/310kent0/items/ac04d35befffac6b695e
 →　説明不足だったようです。申し訳ありません。現在、コンボボックスを動的に生成する記述は/book_registration.html の関数
 async function registerBook関数の中に書かれているようです。しかし、このコンボボックスを使うタイミングは書籍データを登録する
 より前です。国立国会図書館ＡＰＩを使うよりも前、　/book_registration.htmlが読み込まれた直後にユーザーが選択する前提で設計し直して下さい。
+
+/templates/book_registration.htmlの document.addEventListener('DOMContentLoaded', async function() {}ブロックは
+第173行目から第195行目に移し、async function registerBook関数内では第445行目で値を受けとるようにしました。
+第177行目でfetch('api/locations') とありますが、app.pyにもlocation_util.pyにも'api/locations'の定義は見当たりません。
+'api_locations'について検証して下さい。
+
+先ほどは私の見落としで失礼しました。コンボボックスでt04_locationsテーブルから選択するregister_administrator.htmlとbook_registration.htmlを比較すると
+register_administrator.htmlの第67行目から第80行目までのブロックと、それに対応すると思われる第100行目から第103行目までのブロックでは違いが大きいように
+思います。この点を検証していただけますか？
+
+まだコンボボックスからt04_locationsの値を選択することが出来ません。ブラウザの開発者ツールのコンソールを見ると/templates/book=registration.htmlの
+第448行目に対し、Uncaught SyntaxError: Unexpected token 'const' というエラーがでています。この件をご確認いただきたく宜しくお願い致します。
+
+私の編集ミスをマニュアルで修正し、コンボボックスでのlocationの選択が動作するようになりました。次に、このコンボボックスで選択したlocationを
+book_util.pyのdef register_instance_data関数でt00_instance_idsテーブルに書き込む時の カラムlocate_now 及び locate_initの値として下さい。
+書き込む前にコンボボックスで選択したlocationと socket.gethostname()関数で得たpc_nameよりt04_locationsテーブルの対応するカラムlocationの値が
+異なる場合、showCustomAlert関数でflagButtons === 3　で表示、「選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で
+登録する場合、「いいえ」、登録を中止する場合「キャンセル」を押して下さい」と表示、各ボタンにそのような動作を付与して下さい。

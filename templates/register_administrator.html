@@ -93,7 +93,7 @@
                     result.locations.forEach(loc => {
                         const option = document.createElement('option');
                         option.value = loc.location;
-                        option.textContent = `${loc.library_name} (${loc.location})`;
+                        option.textContent = `${loc.location} (${loc.library_name})`;
                         locationSelect.appendChild(option);
                     });
                     // ページロード時にコンボボックスにフォーカスを当てる

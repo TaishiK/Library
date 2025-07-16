@@ -142,12 +142,16 @@ def api_register_book():
     price = data.get('price')
     category = data.get('category')
     hit_ndl = data.get('hit_ndl', False)
+    location = data.get('location')
     thumbnail_exists = data.get('thumbnail_exists', False)
     if not isbn:
         return jsonify({"error": "isbn is required"}), 400
     isbn_cleaned = isbn.replace('-', '')
     isbn_success = register_isbn_data(isbn_cleaned, title, author, publisher, issue_year, price, category, thumbnail_exists)
+    instance_id = register_instance_data(isbn_cleaned, hit_ndl, location)
     if not isbn_success:
+    
+    
         return jsonify({"error": "Failed to register isbn data"}), 500
     instance_id = register_instance_data(isbn_cleaned, hit_ndl)
     if instance_id:
@@ -295,5 +299,5 @@ def api_register_administrator():
 
 
 if __name__ == '__main__':
-    init_db() # init_dbは起動時に一度だけ実行されれば良い
+    #init_db() # init_dbは起動時に一度だけ実行されれば良い
     app.run(debug=True) # デバッグモードで起動

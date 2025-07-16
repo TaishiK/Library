@@ -164,12 +164,12 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
         print(f"Error registering/updating isbn {isbn}: {e}")
         return False, str(e)
 
-def register_instance_data(isbn, hit_ndl):
+def register_instance_data(isbn, hit_ndl, location):
     import socket
     pc_name = socket.gethostname()
     row = t04_locations.query.filter_by(pc_name=pc_name).first()
-    locate_init = row.location if row else '登録待機場所'
-    locate_now = locate_init
+    locate_init = location
+    locate_now = location
     try:
         hit_ndl_val = bool(hit_ndl)  # ←ここを修正
         obj = t00_instance_ids(
