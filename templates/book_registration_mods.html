@@ -79,9 +79,7 @@
         .location-select-container {
             position: absolute;
             top: 20px;
-            right: 50px;
-            width: 350px;
-            padding: 10px;
+            right: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -91,8 +89,8 @@
             color: #555;
         }
         .location-select-container select {
-            padding: 8px;
-            width: 90%;
+            padding: 10px;
+            width: 300px;
             font-size: 1em;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -102,7 +100,10 @@
 <body>
     <div class="location-select-container">
         <label for="locationSelect">場所:</label>
-        <select id="locationSelect" name="location"></select>
+        <select id="locationSelect" name="location" autofocus>
+            <!-- オプションはJavaScriptで動的に追加されます -->
+            <!-- 初期状態では空のセレクトボックス -->
+        </select>
     </div>
     <h1>書籍データ登録</h1>
 
@@ -173,10 +174,10 @@
         </tbody>
     </table>
     {% include 'my_messagebox.html' %}
-
     <script>
-        //コンボボックスによる場所選択
-         document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            const locationSelect = document.getElementById('locationSelect');
+
             try {
                 const response = await fetch('/api/locations');
                 const result = await response.json();
@@ -198,9 +199,9 @@
                 showCustomAlert('通信エラーが発生しました。', 1);
             }
         });
-        // 場所をt04_locationsテーブルのPC名から取得する関数
+
+        // PCの場所を取得する関数
         async function getPcLocation() {
-            const pcLocation = await getPcLocation();
             try {
                 const response = await fetch('/api/get_location_by_serial');
                 const result = await response.json();
@@ -214,15 +215,33 @@
                 console.error('PCの場所の取得中に通信エラーが発生しました:', error);
                 return null;
             }
-        /*} catch (error) {
+        } catch (error) {
                 console.error('通信エラーが発生しました:', error);
                 showCustomAlert('通信エラーが発生しました。', 1);
-        */
         }
-        
         const selectedLocation = document.getElementById("locationSelect").value;
-    
-        
+        const pcLocation = await getPcLocation();
+            if (pcLocation && selectedLocation !== pcLocation) {
+                // showCustomAlert関数はmy_messagebox.htmlで定義されていると仮定
+                // flagButtons === 3 は「はい」「いいえ」「キャンセル」ボタンを表示
+                showCustomAlert('選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で登録する場合「いいえ」、登録を中止する場合「キャンセル」を押して下さい', 3, async function(buttonClicked) {
+                    if (buttonClicked === 'yes') {
+                        // 選択した場所で登録を続行
+                        await proceedRegistration(selectedLocation);
+                    } else if (buttonClicked === 'no') {
+                        // PC名の場所で登録を続行
+                        await proceedRegistration(pcLocation);
+                    } else {
+                        // 登録を中止
+                        alert('登録がキャンセルされました。');
+                    }
+                });
+                return; // アラートが表示されたら、一旦処理を中断
+            }
+
+        // 一致しているか、PCの場所が取得できない場合はそのまま登録を続行
+        await proceedRegistration(selectedLocation);*/
+
         // 国立国会図書館サーチAPIから書籍情報を取得する関数
         async function fetchBookInfo() {
             const isbn = document.getElementById("isbn").value.replace(/-/g, ''); // ハイフンを除去
@@ -377,10 +396,72 @@
                         const parsedPrice = parseInt(priceMatch[0], 10);
                         if (!isNaN(parsedPrice)) {
                             price = parsedPrice;
+                            console.log("Parsed Price:", price);
                         }
                     }
                 }
-                console.log("Parsed Price:", price);
+            } catch (error) {
+                console.error("書籍情報の取得中にエラーが発生しました:", error);
+                alert("書籍情報の取得中にエラーが発生しました。");
+                // エラー時も書影エリアをリセット
+                document.getElementById("bookThumbnail").style.display = "none";
+                document.getElementById("bookThumbnail").src = "";
+                document.getElementById("thumbnailMessage").style.display = "none";
+                document.getElementById("thumbnailMessage").textContent = "";
+                return;
+            }
+
+        async function proceedRegistration(locationToRegister) {
+            const isbn = document.getElementById("isbn").value;
+            const title = document.getElementById("title").value;
+            const author = document.getElementById("author").value;
+            const publisher = document.getElementById("publisher").value;
+            const issueYear = document.getElementById("issueYear").value;
+            const price = document.getElementById("price").value;
+            const category = document.getElementById("category").value;
+
+            if (!isbn) {
+                alert("ISBNを入力してください（書籍情報取得ボタンを押すか、手動で入力してください）。");
+                return;
+            }
+            if (price && isNaN(price)) {
+                alert("価格は数値で入力してください。");
+                return;
+            }
+            if (issueYear && isNaN(issueYear)) {
+                alert("発行年は数値で入力してください。");
+                return;
+            }
+
+            try {
+                const thumbnail_exists = document.getElementById("thumbnail_exists").value === "true";
+                const hit_ndl = document.getElementById("hit_ndl").value === "true";
+                const res = await fetch("/api/register_book", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        isbn: isbn,
+                        title: title,
+                        author: author,
+                        publisher: publisher,
+                        issueyear: issueYear,
+                        price: price,
+                        category: category,
+                        location: locationToRegister // 選択またはPCの場所を渡す
+                    })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    alert("登録が完了しました。");
+                    window.location.reload();
+                } else {
+                    alert("登録に失敗しました: " + (data.detail || data.error || "不明なエラー"));
+                }
+            } catch (e) {
+                alert("API通信エラー: " + e);
+            }
+            clearForm();
+ 
 
 
                 // フォームに値を設定
@@ -419,16 +500,8 @@
 
                 // NDLヒットフラグもhiddenにセット
                 document.getElementById("hit_ndl").value = "true";
-
-            } catch (error) {
-                console.error("書籍情報の取得に失敗しました:", error);
-                alert("書籍情報の取得中にエラーが発生しました。");
-                // エラー時も書影エリアをリセット
-                document.getElementById("bookThumbnail").style.display = "none";
-                document.getElementById("bookThumbnail").src = "";
-                document.getElementById("thumbnailMessage").style.display = "none";
-                document.getElementById("thumbnailMessage").textContent = "";
-            }
+                        location: document.getElementById("locationSelect").value,
+            }        
         }
 
         // 書籍データを登録する関数
@@ -471,10 +544,10 @@
                         publisher: publisher,
                         issueyear: issueYear,
                         price: price,
+                        location: document.getElementById("locationSelect").value, // 選択された場所を取得
                         category: category,
                         thumbnail_exists: thumbnail_exists,
                         hit_ndl: hit_ndl
-                        location: locationToRegister // 選択またはPCの場所を渡す
                     })
                 });
                 const data = await res.json();
@@ -490,7 +563,7 @@
             // localStorage保存・テーブル表示は廃止
             // saveBookData(instanceID, isbn, title, author, publisher, issueYear, price, category);
             // displayBookData();
-            //clearForm();
+            clearForm();
         }
 
         // ページ読み込み時にデータを表示
