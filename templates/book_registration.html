@@ -176,7 +176,9 @@
 
     <script>
         //コンボボックスによる場所選択
-         document.addEventListener('DOMContentLoaded', async function() {
+        var locationToRegister = ''; // t00テーブルに場所として登録する値を格納する変数
+        document.addEventListener('DOMContentLoaded', async function() {
+            let locationSelect = document.getElementById('locationSelect');
             try {
                 const response = await fetch('/api/locations');
                 const result = await response.json();
@@ -184,11 +186,12 @@
                 if (result.success) {
                     result.locations.forEach(loc => {
                         const option = document.createElement('option');
-                        option.value = loc.location; // locationを値として設定
-                        option.textContent = `${loc.location} (${loc.library_name})`; // library_nameを表示テキストとして設定
+                        option.value = loc.location;
+                        option.textContent = `${loc.location} (${loc.library_name})`;
                         locationSelect.appendChild(option);
                     });
-                    locationSelect.focus(); // ページロード時にコンボボックスにフォーカスを当てる
+                    // ページロード時にコンボボックスにフォーカスを当てる
+                    locationSelect.focus();
                 } else {
                     console.error('場所の取得に失敗しました:', result.error);
                     showCustomAlert('場所の取得に失敗しました: ' + result.error, 1);
@@ -197,14 +200,36 @@
                 console.error('通信エラーが発生しました:', error);
                 showCustomAlert('通信エラーが発生しました。', 1);
             }
-        });
-        // 場所をt04_locationsテーブルのPC名から取得する関数
-        async function getPcLocation() {
+        
             const pcLocation = await getPcLocation();
+            if (pcLocation && locationSelect.value !== pcLocation) {
+                // showCustomAlert関数はmy_messagebox.htmlで定義されていると仮定
+                // flagButtons === 3 は「はい」「いいえ」「キャンセル」ボタンを表示
+                showCustomAlert('選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で登録する場合「いいえ」、登録を中止する場合「キャンセル」を押して下さい', 3, async function(buttonClicked) {
+                    if (buttonClicked === 'yes') {
+                        // 選択した場所で登録を続行
+                        locationToRegister = locationSelect.value;
+                        console.log('選択した場所で登録を続行:', locationToRegister);
+                    } else if (buttonClicked === 'no') {
+                        // PC名の場所で登録を続行
+                        locationToRegister = pcLocation;
+                        console.log('PC名の場所で登録を続行:', locationToRegister);
+                    } else {
+                        // 登録を中止
+                        alert('登録がキャンセルされました。');
+                    }
+                });
+                return; // アラートが表示されたら、一旦処理を中断
+            }
+        });
+         
+            // 場所をt04_locationsテーブルのPC名から取得する関数
+        async function getPcLocation() {      
             try {
                 const response = await fetch('/api/get_location_by_serial');
                 const result = await response.json();
                 if (result.location) {
+                    console.log('PCの場所が取得されました:', result.location)
                     return result.location;
                 } else {
                     console.error('PCの場所の取得に失敗しました:', result.error);
@@ -214,14 +239,8 @@
                 console.error('PCの場所の取得中に通信エラーが発生しました:', error);
                 return null;
             }
-        /*} catch (error) {
-                console.error('通信エラーが発生しました:', error);
-                showCustomAlert('通信エラーが発生しました。', 1);
-        */
         }
-        
-        const selectedLocation = document.getElementById("locationSelect").value;
-    
+ 
         
         // 国立国会図書館サーチAPIから書籍情報を取得する関数
         async function fetchBookInfo() {
@@ -456,7 +475,7 @@
                 alert("発行年は数値で入力してください。");
                 return;
             }
-
+            console.log('inside registerBook function - locationToRegister:', window.locationToRegister);
             // API経由で登録
             try {
                 const thumbnail_exists = document.getElementById("thumbnail_exists").value === "true";
@@ -472,9 +491,9 @@
                         issueyear: issueYear,
                         price: price,
                         category: category,
-                        thumbnail_exists: thumbnail_exists,
-                        hit_ndl: hit_ndl
-                        location: locationToRegister // 選択またはPCの場所を渡す
+                        hit_ndl: hit_ndl,
+                        location: window.locationToRegister, // 選択またはPCの場所を渡す
+                        thumbnail_exists: thumbnail_exists
                     })
                 });
                 const data = await res.json();

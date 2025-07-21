@@ -126,9 +126,9 @@ def book_registration():
 def fetch_book_info_route():
     return api_fetch_book_info()
 
-@app.route('/api/register_book', methods=['POST'])
-def register_book_route():
-    return api_register_book()
+#@app.route('/api/register_book', methods=['POST'])
+#def register_book_route():
+#    return api_register_book()
 
 # APIエンドポイント: 書籍登録
 @app.route('/api/register_book', methods=['POST'])
@@ -150,10 +150,8 @@ def api_register_book():
     isbn_success = register_isbn_data(isbn_cleaned, title, author, publisher, issue_year, price, category, thumbnail_exists)
     instance_id = register_instance_data(isbn_cleaned, hit_ndl, location)
     if not isbn_success:
-    
-    
         return jsonify({"error": "Failed to register isbn data"}), 500
-    instance_id = register_instance_data(isbn_cleaned, hit_ndl)
+    instance_id = register_instance_data(isbn_cleaned, hit_ndl, location)
     if instance_id:
         return jsonify({"success": True, "message": "Book registered successfully", "instance_id": instance_id})
     else:

@@ -165,19 +165,20 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
         return False, str(e)
 
 def register_instance_data(isbn, hit_ndl, location):
-    import socket
-    pc_name = socket.gethostname()
-    row = t04_locations.query.filter_by(pc_name=pc_name).first()
-    locate_init = location
-    locate_now = location
+    #import socket
+    #pc_name = socket.gethostname()
+    #row = t04_locations.query.filter_by(pc_name=pc_name).first()
+    #locate_init = location
+    #locate_now = location
+    print('recieved location at books_util:', location)
     try:
         hit_ndl_val = bool(hit_ndl)  # ←ここを修正
         obj = t00_instance_ids(
             instance_id=datetime.now().strftime('%y%m%d_%H%M%S'),
             isbn=isbn,
             hit_ndl_search=hit_ndl_val,
-            locate_now=locate_now,
-            locate_init=locate_init
+            locate_now=location,
+            locate_init=location,
         )
         db.session.add(obj)
         db.session.commit()
@@ -219,6 +220,7 @@ def api_register_book():
     price = data.get('price')
     category = data.get('category')
     hit_ndl = data.get('hit_ndl', False)
+    #location = data.get('location')
     thumbnail_exists = data.get('thumbnail_exists', False)
     if not isbn:
         return jsonify({"error": "isbn is required"}), 400
