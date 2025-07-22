@@ -195,7 +195,7 @@ a.btn {
 .main-menu-footer .btn-large {
     width: 5.25em; /* 1.5rem * 7 / 2 = 5.25rem */
     height: 1.75em;
-    font-size: 4.2rem; /* 1.2rem * 7 / 2 = 4.2rem */
+    font-size: 4.0rem; /* 1.2rem * 7 / 2 = 4.2rem */
 }
 
 /* レスポンシブ調整例 (必要に応じて) */

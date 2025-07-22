@@ -57,3 +57,8 @@ book_util.pyのdef register_instance_data関数でt00_instance_idsテーブル�
 書き込む前にコンボボックスで選択したlocationと socket.gethostname()関数で得たpc_nameよりt04_locationsテーブルの対応するカラムlocationの値が
 異なる場合、showCustomAlert関数でflagButtons === 3　で表示、「選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で
 登録する場合、「いいえ」、登録を中止する場合「キャンセル」を押して下さい」と表示、各ボタンにそのような動作を付与して下さい。
+
+現在のプログラムは/templates/book_registration.html を画面表示すると、その第208行目で呼び出すmy_messagebox.htmlがいきなり開きます。これは
+コンボボックスlocationSelectの初期値と、t04_locationsテーブルをPC名をキーに取得したlocationカラムの値が一致しないためです。そこで
+第２０８行目でmy_messageboxがいきなり開かないように、コンボボックスlocationSelectの初期値を、ＰＣ名をキーにt04_locationsテーブルのlocationカラムから
+取得した値に一致させるようにプログラムを修正して下さい。

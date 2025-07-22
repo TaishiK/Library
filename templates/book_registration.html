@@ -177,53 +177,9 @@
     <script>
         //コンボボックスによる場所選択
         var locationToRegister = ''; // t00テーブルに場所として登録する値を格納する変数
-        document.addEventListener('DOMContentLoaded', async function() {
-            let locationSelect = document.getElementById('locationSelect');
-            try {
-                const response = await fetch('/api/locations');
-                const result = await response.json();
-
-                if (result.success) {
-                    result.locations.forEach(loc => {
-                        const option = document.createElement('option');
-                        option.value = loc.location;
-                        option.textContent = `${loc.location} (${loc.library_name})`;
-                        locationSelect.appendChild(option);
-                    });
-                    // ページロード時にコンボボックスにフォーカスを当てる
-                    locationSelect.focus();
-                } else {
-                    console.error('場所の取得に失敗しました:', result.error);
-                    showCustomAlert('場所の取得に失敗しました: ' + result.error, 1);
-                }
-            } catch (error) {
-                console.error('通信エラーが発生しました:', error);
-                showCustomAlert('通信エラーが発生しました。', 1);
-            }
+        var flagLoaded = false; // 初回ロード時のフラグ
         
-            const pcLocation = await getPcLocation();
-            if (pcLocation && locationSelect.value !== pcLocation) {
-                // showCustomAlert関数はmy_messagebox.htmlで定義されていると仮定
-                // flagButtons === 3 は「はい」「いいえ」「キャンセル」ボタンを表示
-                showCustomAlert('選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で登録する場合「いいえ」、登録を中止する場合「キャンセル」を押して下さい', 3, async function(buttonClicked) {
-                    if (buttonClicked === 'yes') {
-                        // 選択した場所で登録を続行
-                        locationToRegister = locationSelect.value;
-                        console.log('選択した場所で登録を続行:', locationToRegister);
-                    } else if (buttonClicked === 'no') {
-                        // PC名の場所で登録を続行
-                        locationToRegister = pcLocation;
-                        console.log('PC名の場所で登録を続行:', locationToRegister);
-                    } else {
-                        // 登録を中止
-                        alert('登録がキャンセルされました。');
-                    }
-                });
-                return; // アラートが表示されたら、一旦処理を中断
-            }
-        });
-         
-            // 場所をt04_locationsテーブルのPC名から取得する関数
+        // 場所をt04_locationsテーブルのPC名から取得する関数
         async function getPcLocation() {      
             try {
                 const response = await fetch('/api/get_location_by_serial');
@@ -240,7 +196,69 @@
                 return null;
             }
         }
- 
+
+        async function checkLocationMatchAndPrompt(locationSelect) {
+            const pcLocation = await getPcLocation();
+            if (pcLocation) {
+                // 初回ロード時またはPCの場所が取得できた場合、コンボボックスの初期値をPC名の場所に設定
+                if (window.flagLoaded === false) { // 初期ロード時のみ設定
+                    window.flagLoaded = true; // 初回ロードフラグをtrueに設定
+                    locationSelect.value = pcLocation;
+                }
+                locationToRegister = locationSelect.value; // 現在選択されている場所を登録対象とする
+
+                if (locationSelect.value !== pcLocation) {
+                    showCustomAlert('選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で登録する場合「いいえ」、登録を中止する場合「キャンセル」を押して下さい。', 3, async function(buttonClicked) {
+                        if (buttonClicked === 'yes') {
+                            locationToRegister = locationSelect.value;
+                            console.log('選択した場所で登録を続行:', locationToRegister);
+                        } else if (buttonClicked === 'no') {
+                            locationToRegister = pcLocation;
+                            locationSelect.value = pcLocation; // コンボボックスもPC名の場所に更新
+                            console.log('PC名の場所で登録を続行:', locationToRegister);
+                        } else {
+                            window.location.href = '/';
+                        }
+                    });
+                }
+            } else {
+                // PCの場所が取得できなかった場合、アラートを表示
+                showCustomAlert('PCの場所の取得に失敗しました。手動で場所を選択してください。', 1);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            let locationSelect = document.getElementById('locationSelect');
+            try {
+                const response = await fetch('/api/locations');
+                const result = await response.json();
+
+                if (result.success) {
+                    result.locations.forEach(loc => {
+                        const option = document.createElement('option');
+                        option.value = loc.location;
+                        option.textContent = `${loc.location} (${loc.library_name})`;
+                        locationSelect.appendChild(option);
+                    });
+                    locationSelect.focus();
+                } else {
+                    console.error('場所の取得に失敗しました:', result.error);
+                    showCustomAlert('場所の取得に失敗しました: ' + result.error, 1);
+                }
+            } catch (error) {
+                console.error('通信エラーが発生しました:', error);
+                showCustomAlert('通信エラーが発生しました。', 1);
+            }
+            
+            // ページロード時に場所の一致チェックとプロンプトを実行
+            await checkLocationMatchAndPrompt(locationSelect);
+
+            // コンボボックスの選択が変更されたときに場所の一致チェックとプロンプトを実行
+            locationSelect.addEventListener('change', async function() {
+                await checkLocationMatchAndPrompt(locationSelect);
+            });
+        });
+
         
         // 国立国会図書館サーチAPIから書籍情報を取得する関数
         async function fetchBookInfo() {
@@ -488,36 +506,59 @@
                         title: title,
                         author: author,
                         publisher: publisher,
-                        issueyear: issueYear,
+                        issue_year: issueYear,
                         price: price,
-                        category: category,
+                        category_number: category,
+                        thumbnail_exists: thumbnail_exists,
                         hit_ndl: hit_ndl,
-                        location: window.locationToRegister, // 選択またはPCの場所を渡す
-                        thumbnail_exists: thumbnail_exists
+                        location: locationToRegister // Add location to the payload
                     })
                 });
+
                 const data = await res.json();
-                if (res.ok && data.success) {
-                    alert("登録が完了しました。");
-                    window.location.reload();
+
+                if (res.ok) {
+                    alert("書籍が正常に登録されました！ InstanceID: " + instance_id);
+                    // フォームをリセット
+                    document.getElementById("isbn").value = "";
+                    document.getElementById("title").value = "";
+                    document.getElementById("author").value = "";
+                    document.getElementById("publisher").value = "";
+                    document.getElementById("issueYear").value = "";
+                    document.getElementById("price").value = "";
+                    document.getElementById("category").value = "";
+                    document.getElementById("bookThumbnail").style.display = "none";
+                    document.getElementById("bookThumbnail").src = "";
+                    document.getElementById("thumbnailMessage").style.display = "none";
+                    document.getElementById("thumbnailMessage").textContent = "";
+                    document.getElementById("thumbnail_exists").value = "false";
+                    document.getElementById("hit_ndl").value = "false";
+
+                    // テーブルに新しい行を追加
+                    const tableBody = document.getElementById("bookTable").getElementsByTagName('tbody')[0];
+                    const newRow = tableBody.insertRow(0); // 先頭に追加
+                    newRow.insertCell(0).textContent = instance_id;
+                    newRow.insertCell(1).textContent = isbn;
+                    newRow.insertCell(2).textContent = title;
+                    newRow.insertCell(3).textContent = author;
+                    newRow.insertCell(4).textContent = publisher;
+                    newRow.insertCell(5).textContent = issueYear;
+                    newRow.insertCell(6).textContent = price;
+                    newRow.insertCell(7).textContent = category;
+
+                    // "登録データはありません" の行があれば削除
+                    if (tableBody.rows.length > 1 && tableBody.rows[1].cells[0].textContent === "登録データはありません") {
+                        tableBody.deleteRow(1);
+                    }
+
                 } else {
-                    alert("登録に失敗しました: " + (data.detail || data.error || "不明なエラー"));
+                    alert("書籍の登録に失敗しました: " + data.error);
                 }
-            } catch (e) {
-                alert("API通信エラー: " + e);
+            } catch (error) {
+                console.error("登録中にエラーが発生しました:", error);
+                alert("書籍の登録中にエラーが発生しました。");
             }
-            // localStorage保存・テーブル表示は廃止
-            // saveBookData(instanceID, isbn, title, author, publisher, issueYear, price, category);
-            // displayBookData();
-            //clearForm();
         }
-
-        // ページ読み込み時にデータを表示
-        window.onload = function() {
-            // addInitialData(); // 初期データ投入はコメントアウト
-            // displayBookData(); // localStorage表示は廃止
-        };
-
     </script>
 </body>
 </html>
