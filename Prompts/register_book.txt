@@ -62,3 +62,15 @@ book_util.pyのdef register_instance_data関数でt00_instance_idsテーブル�
 コンボボックスlocationSelectの初期値と、t04_locationsテーブルをPC名をキーに取得したlocationカラムの値が一致しないためです。そこで
 第２０８行目でmy_messageboxがいきなり開かないように、コンボボックスlocationSelectの初期値を、ＰＣ名をキーにt04_locationsテーブルのlocationカラムから
 取得した値に一致させるようにプログラムを修正して下さい。
+
+/templates/book_registration.htmlを表示したとき、画面左上のコンボボックスでt04_locationsテーブルの値が選択されます。このコンボボックスの値がロード時及び更新時に
+決まった時、t04_locationsテーブルの該当するカラムcategory_tableの値をチェック、その値が't07_categories_ndc'に等しくない場合、画面上の
+「書籍分類」タグの下に「独自分類」タグを表示、その中には「独自分類」ラベルとt04_locationsテーブルの該当するカラムcategory_tableの名前に一致する
+テーブル名のテーブル(t07_categories_port_sc, またはt07_categories_port_scmm)のカラムcategory_id及びcategoryを選択肢とするコンボボックスを
+表示するようにして下さい。
+
+ありがとうございます。/templates/book_registration.htmlの第265行目に`/api/location_category_table?location=${selectedLocation}`とあります。
+これに対応するAPIの定義がapp.pyにあるか確認して下さい。
+
+/templates/book_registration.htmlの第280行目に`/api/categories?table_name=${categoryTable}`とあります。
+これに対応するAPIがapp.pyにあるか確認して下さい。

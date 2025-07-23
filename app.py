@@ -22,6 +22,7 @@ from sqlalchemy.orm import relationship
 import logging 
 logging.getLogger('salalchemy.engine').setLevel(logging.WARNING)  # SQLAlchemyのログレベルをINFO or WARNINGに設定
 from models import db, t01_isbns, t00_instance_ids, t02_users, t03_administrators, t04_locations, t05_lent_records, t06_return_records
+from models import db, t07_categories_ndc, t07_categories_c, t07_categories_port_sc, t07_categories_port_scmm
 from ldap_utils import get_ldap_user_info_python
 from book_utils import api_fetch_book_info, api_register_book, register_isbn_data, register_instance_data
 from lent_utils import api_register_lent_record, api_return_book, api_check_lent_status
@@ -294,7 +295,47 @@ def api_register_administrator():
     except Exception as e:
         db.session.rollback()
         return jsonify({"success": False, "error": str(e)}), 500
+# --- locationからcategory_table取得API ---
+@app.route('/api/location_category_table', methods=['GET'])
+def get_location_category_table():
+    location = request.args.get('location')
+    if not location:
+        return jsonify({"success": False, "error": "Location is required"}), 400
 
+    try:
+        row = t04_locations.query.filter_by(location=location).first()
+        if not row:
+            return jsonify({"success": False, "error": "Location not found"}), 404
+
+        category_table = row.category_table
+        return jsonify({"success": True, "category_table": category_table}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+# --- カテゴリ情報取得API ---
+@app.route('/api/categories', methods=['GET'])
+def get_categories():
+    table_name = request.args.get('table_name')
+    if not table_name:
+        return jsonify({"success": False, "error": "Table name is required"}), 400
+
+    try:
+        # テーブル名に基づいて適切なモデルを選択
+        if table_name == 't07_categories_port_sc':
+            model = t07_categories_port_sc
+        elif table_name == 't07_categories_port_scmm':
+            model = t07_categories_port_scmm
+        else:
+            return jsonify({"success": False, "error": "Invalid table name"}), 400
+
+        # データベースからカテゴリ情報を取得
+        categories = model.query.all()
+        category_list = [{"category_id": cat.category_id, "category": cat.category} for cat in categories]
+        return jsonify({"success": True, "categories": category_list}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
     #init_db() # init_dbは起動時に一度だけ実行されれば良い
