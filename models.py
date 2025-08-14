@@ -11,7 +11,7 @@ class t01_isbns(db.Model):
     publisher = db.Column(db.String)
     issue_year = db.Column(db.String)
     price = db.Column(db.Numeric)
-    category_number = db.Column(db.String)
+    category_id = db.Column(db.String)
     thumbnail = db.Column(db.Integer)
     # リレーション
     instances = relationship('t00_instance_ids', back_populates='isbn_ref')

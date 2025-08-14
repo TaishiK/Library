@@ -143,7 +143,7 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
             obj.publisher = publisher
             obj.issue_year = issueyear
             obj.price = price
-            obj.category_number = category
+            obj.category_id = category
             obj.thumbnail = thumbnail_val
         else:
             obj = t01_isbns(
@@ -153,7 +153,7 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
                 publisher=publisher,
                 issue_year=issueyear,
                 price=price,
-                category_number=category,
+                category_id=category,
                 thumbnail=thumbnail_val
             )
             db.session.add(obj)
@@ -164,29 +164,26 @@ def register_isbn_data(isbn, title, author, publisher, issueyear, price, categor
         print(f"Error registering/updating isbn {isbn}: {e}")
         return False, str(e)
 
-def register_instance_data(isbn, hit_ndl, location):
-    #import socket
-    #pc_name = socket.gethostname()
-    #row = t04_locations.query.filter_by(pc_name=pc_name).first()
-    #locate_init = location
-    #locate_now = location
-    print('recieved location at books_util:', location)
+def register_instance_data(isbn, hit_ndl, location, own_category_id=None):
+    # 位置と独自分類を含めたインスタンスID登録関数
+    print('recieved location at books_util:', location, 'own_category_id:', own_category_id)
     try:
-        hit_ndl_val = bool(hit_ndl)  # ←ここを修正
+        hit_ndl_val = bool(hit_ndl)
         obj = t00_instance_ids(
             instance_id=datetime.now().strftime('%y%m%d_%H%M%S'),
             isbn=isbn,
             hit_ndl_search=hit_ndl_val,
             locate_now=location,
             locate_init=location,
+            own_category_id=own_category_id if own_category_id not in ('', None) else None,
         )
         db.session.add(obj)
         db.session.commit()
-        return obj.instance_id, None
+        return obj.instance_id
     except Exception as e:
         db.session.rollback()
         print(f"Error registering instanceid for isbn {isbn}: {e}")
-        return None, str(e)
+        return None
 
 def api_fetch_book_info():
     data = request.get_json()

@@ -165,7 +165,7 @@
                 <td>{{ book.publisher }}</td>
                 <td>{{ book.issue_year }}</td>
                 <td>{{ book.price }}</td>
-                <td>{{ book.category_number }}</td>
+                <td>{{ book.category_id }}</td>
             </tr>
         {% else %}
             <tr><td colspan="8" style="text-align:center; color:#888;">登録データはありません</td></tr>
@@ -508,7 +508,7 @@
                         publisher: publisher,
                         issue_year: issueYear,
                         price: price,
-                        category_number: category,
+                        category_id: category,
                         thumbnail_exists: thumbnail_exists,
                         hit_ndl: hit_ndl,
                         location: locationToRegister // Add location to the payload

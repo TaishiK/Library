@@ -169,7 +169,7 @@
                 <td>{{ book.publisher }}</td>
                 <td>{{ book.issue_year }}</td>
                 <td>{{ book.price }}</td>
-                <td>{{ book.category_number }}</td>
+                <td>{{ book.category_id }}</td>
             </tr>
         {% else %}
             <tr><td colspan="8" style="text-align:center; color:#888;">登録データはありません</td></tr>
@@ -529,6 +529,8 @@
             const issueYear = document.getElementById("issueYear").value;
             const price = document.getElementById("price").value;
             const category = document.getElementById("category").value; // Get category
+            const ownCategorySelect = document.getElementById('originalCategory');
+            const own_category_id = (document.getElementById('originalCategoryContainer').style.display !== 'none' && ownCategorySelect && ownCategorySelect.value) ? ownCategorySelect.value : null;
 
             // 入力値の検証
             if (!isbn) {
@@ -543,11 +545,35 @@
                 alert("発行年は数値で入力してください。");
                 return;
             }
-            console.log('inside registerBook function - locationToRegister:', window.locationToRegister);
+            console.log('inside registerBook function - locationToRegister:', window.locationToRegister, 'own_category_id:', own_category_id);
             // API経由で登録
             try {
                 const thumbnail_exists = document.getElementById("thumbnail_exists").value === "true";
                 const hit_ndl = document.getElementById("hit_ndl").value === "true";
+                const response = await fetch('/api/register_book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        isbn: isbn,
+                        title: title,
+                        author: author,
+                        publisher: publisher,
+                        issueyear: issueYear,
+                        price: price,
+                        category: category,
+                        hit_ndl: hit_ndl,
+                        location: window.locationToRegister,
+                        own_category_id: own_category_id,
+                        thumbnail_exists: thumbnail_exists
+                    })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert('登録が完了しました。InstanceID: ' + result.instance_id);
+                    window.location.reload();
+                } else {
+                    alert('登録に失敗しました: ' + (result.error || '不明なエラー'));
+                }
             } catch (error) {
                 console.error("書籍情報の登録に失敗しました:", error);
                 alert("書籍情報の登録中にエラーが発生しました。");

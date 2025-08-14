@@ -74,3 +74,12 @@ book_util.pyのdef register_instance_data関数でt00_instance_idsテーブル�
 
 /templates/book_registration.htmlの第280行目に`/api/categories?table_name=${categoryTable}`とあります。
 これに対応するAPIがapp.pyにあるか確認して下さい。
+
+/templates/book_registeration.htmlにおいて画面左上のコンボボックスで「PORT 品川」または
+「PORT みなとみらい」が選ばれた結果として「書籍分類」タグの下に「独自分類」タグが表示され、そのコンボボックスでは
+to07_categories_port_scまたはt07_categories_port_scmmのカラムcategory_id及びcategoryが選択肢となります。
+画面左上の「書籍登録」ボタンが押された時、既に「書籍名」や「インスタンスID」「ISBN」等の
+値がテーブル t00_instance_idsやt01_isbnsに書き込まれるようになっています。 これに加えて
+「独自分類」がt07_categories_port_scまたはt07_categories_port_scmmより指定された
+場合、その指定されたcategory_idをテーブルt00_instance_idsのカラムown_category_idに
+書き込むようプログラムを修正して下さい。

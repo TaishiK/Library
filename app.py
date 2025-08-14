@@ -117,7 +117,7 @@ def book_registration():
         func.coalesce(t01_isbns.publisher, 'N/A').label('publisher'),
         func.coalesce(t01_isbns.issue_year, 'N/A').label('issue_year'),
         func.coalesce(t01_isbns.price, 0).label('price'),
-        func.coalesce(t01_isbns.category_number, 'N/A').label('category_number')
+        func.coalesce(t01_isbns.category_id, 'N/A').label('category_id')
     ).outerjoin(t01_isbns, t00_instance_ids.isbn == t01_isbns.isbn)
     books = books.order_by(t00_instance_ids.instance_id.desc()).all()
     return render_template('book_registration.html', books=books)
@@ -144,15 +144,15 @@ def api_register_book():
     category = data.get('category')
     hit_ndl = data.get('hit_ndl', False)
     location = data.get('location')
+    own_category_id = data.get('own_category_id')  # 追加: 独自分類ID
     thumbnail_exists = data.get('thumbnail_exists', False)
     if not isbn:
         return jsonify({"error": "isbn is required"}), 400
     isbn_cleaned = isbn.replace('-', '')
     isbn_success = register_isbn_data(isbn_cleaned, title, author, publisher, issue_year, price, category, thumbnail_exists)
-    instance_id = register_instance_data(isbn_cleaned, hit_ndl, location)
     if not isbn_success:
         return jsonify({"error": "Failed to register isbn data"}), 500
-    instance_id = register_instance_data(isbn_cleaned, hit_ndl, location)
+    instance_id = register_instance_data(isbn_cleaned, hit_ndl, location, own_category_id)
     if instance_id:
         return jsonify({"success": True, "message": "Book registered successfully", "instance_id": instance_id})
     else:
