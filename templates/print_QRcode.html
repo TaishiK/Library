@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>QRコードラベル印刷</title>
+<style>
+@page { size: A4 portrait; margin:0; }
+body { font-family: sans-serif; margin:0; padding:0; }
+header { padding:10px 15px; display:flex; align-items:center; gap:12px; }
+#locationSelect { padding:6px 8px; font-size:14px; }
+#mainLayout { display:flex; height: calc(100vh - 60px); padding:0 15px 15px; box-sizing:border-box; }
+#leftPane { flex:1; overflow:auto; border:1px solid #ccc; padding:10px; }
+#recordsTable { width:100%; border-collapse:collapse; font-size:13px; }
+#recordsTable th, #recordsTable td { border:1px solid #ccc; padding:4px 6px; text-align:left; }
+#recordsTable th { position:sticky; top:0; background:#f5f5f5; }
+#rightPane { width:220px; display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch; padding:10px; gap:14px; }
+.actionBtn { padding:14px 10px; font-size:16px; cursor:pointer; border:none; color:#fff; border-radius:4px; }
+#btnGenerate { background:#007bff; }
+#btnMenu { background:#28a745; }
+#status { font-size:12px; color:#555; }
+@media print {
+  header, #rightPane, #status, #leftPane { display:none; }
+  #labelSheet { display:grid !important; }
+}
+#labelSheet { display:none; width:210mm; height:297mm; box-sizing:border-box; padding:0; position:absolute; top:0; left:0;
+  grid-template-columns: repeat(8, 24mm);
+  grid-template-rows: repeat(10, 27mm);
+  gap:0; }
+.labelItem { width:24mm; height:27mm; box-sizing:border-box; position:relative; overflow:hidden;
+  border-right:1px dotted #000; border-bottom:1px dotted #000; }
+.labelItem .qrBox { position:absolute; left:1mm; top:1.5mm; width:18mm; height:18mm; }
+.labelItem .qrBox canvas, .labelItem .qrBox img { width:100% !important; height:100% !important; }
+.labelCut { position:absolute; top:0; left:20mm; width:0; height:100%; border-left:1px dotted #000; }
+/* #番号: 回転 -90°, 右端0.25mm内側, 下端を基準。高さ=フォントサイズ3.5mm相当13.2px */
+.labelIndexRot { position:absolute; right:0.25mm; bottom:0.25mm; font-size:13.2px; line-height:1; white-space:nowrap; transform:rotate(-90deg); transform-origin:bottom right; }
+/* フッタ: 左端10mmの位置を中央として配置 (center x=10mm), 高さ4.5mm, 上端21.5mm で QR(～19.5mm)との隙間2mm確保 */
+.labelFooter { position:absolute; top:21.5mm; left:10mm; transform:translateX(-50%); height:4.5mm; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; }
+.labelFooter img { height:4.5mm; width:auto; max-width:18mm; object-fit:contain; }
+.labelFooter span { font-size:4mm; line-height:1; white-space:nowrap; }
+#printStart { width:100%; box-sizing:border-box; padding:6px 4px; }
+#printEnd { display:inline-block; padding:4px 0; font-weight:bold; }
+</style>
+</head>
+<body>
+<header>
+  <label for="locationSelect">場所:</label>
+  <select id="locationSelect"></select>
+  <span id="status"></span>
+</header>
+<div id="mainLayout">
+  <div id="leftPane">
+    <table id="recordsTable">
+      <thead>
+        <tr><th>#</th><th>InstanceID</th><th>ISBN</th><th>タイトル</th></tr>
+      </thead>
+      <tbody id="recordsBody"></tbody>
+    </table>
+  </div>
+  <div id="rightPane">
+    <div id="rangeBox">
+      <label for="printStart">印刷開始位置</label>
+      <input type="number" id="printStart" value="1" min="1" step="1" />
+      <label>印刷終了位置</label>
+      <div id="printEnd">80</div>
+    </div>
+    <button id="btnGenerate" class="actionBtn">QRラベル生成</button>
+    <button id="btnMenu" class="actionBtn" onclick="location.href='/'">管理メニュー</button>
+  </div>
+</div>
+<div id="labelSheet"></div>
+<!-- qrcodejs (方式A) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+async function loadLocations() {
+  const sel = document.getElementById('locationSelect');
+  sel.innerHTML = '';
+  try {
+    const res = await fetch('/api/locations');
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error || '取得失敗');
+    json.locations.forEach(loc => {
+      const opt = document.createElement('option');
+      opt.value = loc.location;
+      opt.textContent = `${loc.location} (${loc.library_name})`;
+      sel.appendChild(opt);
+    });
+  } catch(e){
+    console.error(e);
+    document.getElementById('status').textContent = '場所取得エラー';
+  }
+}
+
+let currentRecordsDesc = []; // テーブル表示に使っている（新しい順 DESC）
+
+let locationMeta = { library_name:'', logo:null };
+async function fetchLocationMeta(loc){
+  try {
+    const r = await fetch(`/api/location_detail?location=${encodeURIComponent(loc)}`);
+    const j = await r.json();
+    if(j.success){ locationMeta.library_name = j.library_name || ''; locationMeta.logo = j.logo || null; }
+    else { locationMeta = { library_name:'', logo:null }; }
+  }catch(e){ locationMeta = { library_name:'', logo:null }; }
+}
+
+async function loadInstances() {
+  const loc = document.getElementById('locationSelect').value;
+  await fetchLocationMeta(loc); // 位置メタ更新
+  const body = document.getElementById('recordsBody');
+  body.innerHTML='';
+  if(!loc) return;
+  document.getElementById('status').textContent = '読込中...';
+  try {
+    const res = await fetch(`/api/instances_by_location?location=${encodeURIComponent(loc)}`);
+    const json = await res.json();
+    if(!json.success) throw new Error(json.error || '取得失敗');
+    const records = json.records; // DESC（新しい順）
+    currentRecordsDesc = records; // 保存
+    records.forEach((r, idx) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${idx+1}</td><td>${r.instance_id}</td><td>${r.isbn}</td><td>${escapeHtml(r.title)}</td>`;
+      body.appendChild(tr);
+    });
+    document.getElementById('status').textContent = `${records.length} 件`;
+    updateEndDisplay();
+  } catch(e){
+    console.error(e);
+    document.getElementById('status').textContent = 'データ取得エラー';
+  }
+}
+
+function escapeHtml(str){
+  return (str||'').replace(/[&<>\"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c]));
+}
+
+function updateEndDisplay(){
+  const startInput = document.getElementById('printStart');
+  let start = parseInt(startInput.value, 10);
+  if(isNaN(start) || start < 1) start = 1;
+  startInput.value = start;
+  const end = start + 79; // 指定仕様: 開始 +79
+  document.getElementById('printEnd').textContent = end;
+}
+
+document.addEventListener('input', e => {
+  if(e.target && e.target.id === 'printStart') updateEndDisplay();
+});
+
+function fitIndex(div){
+  const maxWidthMM = 4; // 20mm～24mm間
+  const pxPerMM = 96/25.4; // 約3.7795
+  const maxPx = maxWidthMM * pxPerMM; // 約15.1px
+  // 回転前テキスト幅測定 (要一時表示)
+  div.style.transform='none';
+  const w = div.scrollWidth;
+  if(w > maxPx){
+    const scale = maxPx / w;
+    div.style.transform = `scale(${scale}) rotate(-90deg)`;
+    div.style.transformOrigin = 'bottom right';
+  } else {
+    div.style.transform='rotate(-90deg)';
+  }
+}
+
+function generateLabels(){
+  if(currentRecordsDesc.length === 0){ alert('データがありません'); return; }
+  const start = parseInt(document.getElementById('printStart').value, 10) || 1;
+  const endDisplay = document.getElementById('printEnd').textContent;
+  const end = parseInt(endDisplay, 10) || (start + 79);
+  const startIdx = start - 1;
+  const subset = currentRecordsDesc.slice(startIdx, startIdx + 80);
+  if(subset.length === 0){ alert('開始位置が範囲外です'); return; }
+  const sheet = document.getElementById('labelSheet');
+  sheet.innerHTML='';
+  const imageLoadPromises = [];
+  for(let i=0;i<subset.length;i++){
+    const r = subset[i];
+    const col = Math.floor(i/10)+1; // 1..8
+    const row = (i % 10)+1;         // 1..10
+    const div = document.createElement('div');
+    div.className='labelItem';
+    div.style.gridColumn = col;
+    div.style.gridRow = row;
+    const qrBox = document.createElement('div');
+    qrBox.className='qrBox';
+    div.appendChild(qrBox);
+    const cut = document.createElement('div');
+    cut.className='labelCut';
+    div.appendChild(cut);
+    const idxDiv = document.createElement('div');
+    idxDiv.className='labelIndexRot';
+    idxDiv.textContent = `#${start + i}`;
+    div.appendChild(idxDiv);
+    const footer = document.createElement('div');
+    footer.className='labelFooter';
+    if(locationMeta.logo){
+      const img = document.createElement('img');
+      img.src = `/static/logo/${locationMeta.logo}`;
+      img.alt = locationMeta.library_name || '';
+      img.onerror = () => { footer.innerHTML=''; if(locationMeta.library_name){ const span = document.createElement('span'); span.textContent = locationMeta.library_name; footer.appendChild(span);} };
+      footer.appendChild(img);
+      imageLoadPromises.push(new Promise(res=>{ img.onload=()=>res(); img.onerror=()=>res(); }));
+    } else if(locationMeta.library_name){
+      const span = document.createElement('span'); span.textContent = locationMeta.library_name; footer.appendChild(span);
+    }
+    div.appendChild(footer);
+    sheet.appendChild(div);
+    new QRCode(qrBox, { text: r.instance_id, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.L });
+    fitIndex(idxDiv);
+  }
+  sheet.style.display='grid';
+  Promise.all(imageLoadPromises).then(()=>{ window.print(); sheet.style.display='none'; });
+}
+
+async function getPcLocation(){
+  try { const r = await fetch('/api/get_location_by_serial'); const j = await r.json(); return j.location || ''; } catch(e){ return ''; }
+}
+
+// 初期ロード
+(async ()=>{
+  await loadLocations();
+  const pcLoc = await getPcLocation();
+  if(pcLoc){
+    const sel = document.getElementById('locationSelect');
+    const opt = Array.from(sel.options).find(o=>o.value===pcLoc);
+    if(opt) sel.value = pcLoc; // 一致する場合
+  }
+  await loadInstances();
+})();
+
+document.getElementById('locationSelect').addEventListener('change', loadInstances);
+document.getElementById('btnGenerate').addEventListener('click', generateLabels);
+
+</script>
+</body>
+</html>

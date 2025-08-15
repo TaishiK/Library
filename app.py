@@ -106,6 +106,10 @@ def register_administrator():
 def register_user():
     return render_template('register_user.html')
 
+@app.route('/print_QRcode.html')
+def print_qrcode_page():
+    return render_template('print_QRcode.html')
+
 @app.route('/book_registration')
 def book_registration():
     # SQLAlchemyで一覧取得
@@ -336,6 +340,45 @@ def get_categories():
 
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+
+@app.route('/api/instances_by_location')
+def api_instances_by_location():
+    location = request.args.get('location')
+    if not location:
+        return jsonify({'success': False, 'error': 'location is required'}), 400
+    try:
+        # instance_id DESC で取得（仕様上のSQLに合わせる）
+        rows = db.session.query(
+            t00_instance_ids.instance_id,
+            t00_instance_ids.isbn,
+            t01_isbns.title
+        ).join(t01_isbns, t00_instance_ids.isbn == t01_isbns.isbn)
+        rows = rows.filter(t00_instance_ids.locate_now == location).order_by(t00_instance_ids.instance_id.desc()).all()
+        data = [
+            {
+                'instance_id': r.instance_id,
+                'isbn': r.isbn,
+                'title': r.title if r.title else ''
+            } for r in rows
+        ]
+        return jsonify({'success': True, 'records': data})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/location_detail')
+def api_location_detail():
+    location = request.args.get('location')
+    if not location:
+        return jsonify({'success': False, 'error': 'location is required'}), 400
+    try:
+        row = t04_locations.query.filter_by(location=location).first()
+        if not row:
+            return jsonify({'success': False, 'error': 'not found'}), 404
+        # logo列未定義対応: getattrで安全取得
+        logo = getattr(row, 'logo', None)
+        return jsonify({'success': True, 'location': row.location, 'library_name': row.library_name, 'logo': logo})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     #init_db() # init_dbは起動時に一度だけ実行されれば良い

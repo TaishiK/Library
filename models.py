@@ -52,7 +52,8 @@ class t04_locations(db.Model):
     monitor_type = db.Column(db.String)
     remind_mail = db.Column(db.Integer)
     mail_by_automate = db.Column(db.Integer)
-
+    logo = db.Column(db.String)
+    
 class t05_lent_records(db.Model):
     __tablename__ = 't05_lent_records'
     lent_id = db.Column(db.Integer, primary_key=True, autoincrement=True)

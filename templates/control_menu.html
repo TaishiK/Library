@@ -28,10 +28,22 @@
 
         <button type="button" id="gotoMainMenu" class="btn btn-medium">メインメニュー</button>
         <button type="button" class="btn btn-medium">棚情報管理</button>
-        <button type="button" class="btn btn-medium">QRラベル印刷</button>
+        <button type="button" id="gotoPrintQR" class="btn btn-medium">QRラベル印刷</button>
     </main>
 <!-- 共通カスタムメッセージボックスをインクルード -->
     {% include 'my_messagebox.html' %}
     <script src="/static/js/navigation.js" defer></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', ()=>{
+        const btn = document.getElementById('gotoPrintQR');
+        if(btn){ btn.addEventListener('click', ()=> { window.location.href = '/print_QRcode.html'; }); }
+        const bookBtn = document.getElementById('gotoBookRegistration');
+        if(bookBtn){ bookBtn.addEventListener('click', ()=> { window.location.href = '/book_registration'; }); }
+        const adminBtn = document.getElementById('registerAdministratorButton');
+        if(adminBtn){ adminBtn.addEventListener('click', ()=> { window.location.href = '/register_administrator.html'; }); }
+        const mainBtn = document.getElementById('gotoMainMenu');
+        if(mainBtn){ mainBtn.addEventListener('click', ()=> { window.location.href = '/'; }); }
+    });
+    </script>
 </body>
 </html>
