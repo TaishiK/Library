@@ -6,6 +6,8 @@
 <style>
 @page { size: A4 portrait; margin:0; }
 body { font-family: sans-serif; margin:0; padding:0; }
+/* 薄い灰色のカットライン色 */
+:root { --cut-color:#999; }
 header { padding:10px 15px; display:flex; align-items:center; gap:12px; }
 #locationSelect { padding:6px 8px; font-size:14px; }
 #mainLayout { display:flex; height: calc(100vh - 60px); padding:0 15px 15px; box-sizing:border-box; }
@@ -21,24 +23,38 @@ header { padding:10px 15px; display:flex; align-items:center; gap:12px; }
 @media print {
   header, #rightPane, #status, #leftPane { display:none; }
   #labelSheet { display:grid !important; }
+  #mappingSheet { display:block !important; }
 }
-#labelSheet { display:none; width:210mm; height:297mm; box-sizing:border-box; padding:0; position:absolute; top:0; left:0;
+#labelSheet { /* 8列 x 10行 ラベル領域を左10mm 上15mmにオフセット */
+  display:none; position:absolute; top:15mm; left:10mm;
+  width:192mm; height:270mm; /* 24mm*8, 27mm*10 */
+  box-sizing:border-box; padding:0; margin:0;
   grid-template-columns: repeat(8, 24mm);
   grid-template-rows: repeat(10, 27mm);
-  gap:0; }
+  gap:0;
+}
 .labelItem { width:24mm; height:27mm; box-sizing:border-box; position:relative; overflow:hidden;
-  border-right:1px dotted #000; border-bottom:1px dotted #000; }
+  border-right:1px dotted var(--cut-color); border-bottom:1px dotted var(--cut-color); }
+/* 追加: 1列目左端の外枠点線 */
+.labelItem.firstCol { border-left:1px dotted var(--cut-color); }
+/* 追加: 1行目上端の外枠点線 */
+.labelItem.firstRow { border-top:1px dotted var(--cut-color); }
 .labelItem .qrBox { position:absolute; left:1mm; top:1.5mm; width:18mm; height:18mm; }
 .labelItem .qrBox canvas, .labelItem .qrBox img { width:100% !important; height:100% !important; }
-.labelCut { position:absolute; top:0; left:20mm; width:0; height:100%; border-left:1px dotted #000; }
+.labelCut { position:absolute; top:0; left:20mm; width:0; height:100%; border-left:1px dotted var(--cut-color); }
 /* #番号: 回転 -90°, 右端0.25mm内側, 下端を基準。高さ=フォントサイズ3.5mm相当13.2px */
-.labelIndexRot { position:absolute; right:0.25mm; bottom:0.25mm; font-size:13.2px; line-height:1; white-space:nowrap; transform:rotate(-90deg); transform-origin:bottom right; }
+.labelIndexRot { position:absolute; right:0.25mm; bottom:13.5mm; font-size:13.2px; line-height:1; white-space:nowrap; transform:rotate(-90deg); transform-origin:bottom right; }
 /* フッタ: 左端10mmの位置を中央として配置 (center x=10mm), 高さ4.5mm, 上端21.5mm で QR(～19.5mm)との隙間2mm確保 */
 .labelFooter { position:absolute; top:21.5mm; left:10mm; transform:translateX(-50%); height:4.5mm; display:flex; align-items:center; justify-content:center; text-align:center; overflow:hidden; }
 .labelFooter img { height:4.5mm; width:auto; max-width:18mm; object-fit:contain; }
 .labelFooter span { font-size:4mm; line-height:1; white-space:nowrap; }
 #printStart { width:100%; box-sizing:border-box; padding:6px 4px; }
 #printEnd { display:inline-block; padding:4px 0; font-weight:bold; }
+#mappingSheet { display:none; width:100%; box-sizing:border-box; padding:8mm 8mm 6mm; page-break-before:always; }
+#mappingSheet h2 { margin:0 0 2mm; font-size:18px; line-height:1; } /* タイトルのフォントサイズを大きく */
+#mappingTable { width:100%; border-collapse:collapse; font-size:14px; line-height:1.05; }
+#mappingTable th, #mappingTable td { border:1px solid #999; padding:2px 4px; text-align:left; }
+#mappingTable th { background:#f5f5f5; }
 </style>
 </head>
 <body>
@@ -68,6 +84,7 @@ header { padding:10px 15px; display:flex; align-items:center; gap:12px; }
   </div>
 </div>
 <div id="labelSheet"></div>
+<div id="mappingSheet"></div>
 <!-- qrcodejs (方式A) -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -170,14 +187,19 @@ function generateLabels(){
   const subset = currentRecordsDesc.slice(startIdx, startIdx + 80);
   if(subset.length === 0){ alert('開始位置が範囲外です'); return; }
   const sheet = document.getElementById('labelSheet');
+  const mapping = document.getElementById('mappingSheet');
   sheet.innerHTML='';
+  mapping.innerHTML='';
   const imageLoadPromises = [];
   for(let i=0;i<subset.length;i++){
     const r = subset[i];
     const col = Math.floor(i/10)+1; // 1..8
     const row = (i % 10)+1;         // 1..10
     const div = document.createElement('div');
-    div.className='labelItem';
+    const classes = ['labelItem'];
+    if(col===1) classes.push('firstCol');
+    if(row===1) classes.push('firstRow');
+    div.className = classes.join(' ');
     div.style.gridColumn = col;
     div.style.gridRow = row;
     const qrBox = document.createElement('div');
@@ -207,8 +229,19 @@ function generateLabels(){
     new QRCode(qrBox, { text: r.instance_id, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.L });
     fitIndex(idxDiv);
   }
+  // 対応表生成 (# とタイトル)
+  let html = '<h2>QRラベル対応表 (# と書籍名)</h2>';
+  html += '<table id="mappingTable"><thead><tr><th>#</th><th>タイトル</th></tr></thead><tbody>';
+  for(let i=0;i<subset.length;i++){
+    const num = start + i;
+    const title = subset[i].title ? escapeHtml(subset[i].title) : '';
+    html += `<tr><td>#${num}</td><td>${title}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  mapping.innerHTML = html;
   sheet.style.display='grid';
-  Promise.all(imageLoadPromises).then(()=>{ window.print(); sheet.style.display='none'; });
+  mapping.style.display='block';
+  Promise.all(imageLoadPromises).then(()=>{ window.print(); sheet.style.display='none'; mapping.style.display='none'; });
 }
 
 async function getPcLocation(){
