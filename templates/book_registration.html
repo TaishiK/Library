@@ -38,7 +38,6 @@
             background-color: #eee;
         }
 
-
         button[type="button"] { /* Specificity increased */
             padding: 5px 10px;
             margin-left: 5px;
@@ -51,14 +50,17 @@
         button[type="submit"] { /* Style for the register button */
              display: block;
              width: 100px;
-             margin: 20px auto;
+             /* flex内配置に合わせ margin削減 */
+             margin: 0;
              padding: 10px;
              background-color: #4CAF50;
              color: white;
              border: none;
              cursor: pointer;
         }
-
+        .form-buttons { display:flex; justify-content:space-between; gap:40px; margin-top:25px; }
+        .form-buttons button { flex:1; max-width:180px; padding:10px; height:44px; display:flex; align-items:center; justify-content:center; }
+        .btn-menu { background:#6c757d; color:#fff; border:none; cursor:pointer; }
 
         table {
             width: 80%;
@@ -97,6 +99,20 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+        .isbn-row { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            margin-bottom: 12px; 
+            margin-left: 60px; /* 左側に余白を追加して中央揃え */
+        }
+        .isbn-row label { 
+            width: auto; 
+            margin-right: 5px; 
+        }
+        #isbn { 
+            width: 185px; 
+        } 
     </style>
 </head>
 <body>
@@ -107,9 +123,11 @@
     <h1>書籍データ登録</h1>
 
     <form id="bookForm">
-        <label for="isbn">ISBN:</label>
-        <input type="text" id="isbn" name="isbn" style="ime-mode: inactive;"> <!-- 初期入力を半角に -->
-        <button type="button" onclick="fetchBookInfo()">書籍情報取得</button>
+        <div class="isbn-row">
+            <label for="isbn">ISBN:</label>
+            <input type="text" id="isbn" name="isbn" style="ime-mode: inactive;">
+            <button type="button" onclick="fetchBookInfo()">書籍情報取得</button>
+        </div>
         <!-- 書影表示エリア -->
         <div id="thumbnailContainer" style="margin-top: 10px; text-align: center; min-height: 150px;">
             <img id="bookThumbnail" src="" alt="書影" style="max-width: 100px; max-height: 150px; display: none; border: 1px solid #ccc;">
@@ -142,7 +160,11 @@
         <input type="hidden" id="thumbnail_exists" name="thumbnail_exists" value="false">
         <input type="hidden" id="hit_ndl" name="hit_ndl" value="false">
 
-        <button type="submit" onclick="registerBook(event)">登録</button> 
+        <div class= "form-buttons">
+            <button type="button" onclick="location.href='/control_menu.html'">管理メニュー</button>
+            <button type="button" onclick="clearForm()">クリア</button>
+            <button type="submit" onclick="registerBook(event)">登録</button>
+        </div>
     </form>
 
     <h2>登録データ一覧</h2>
@@ -578,6 +600,38 @@
                 console.error("書籍情報の登録に失敗しました:", error);
                 alert("書籍情報の登録中にエラーが発生しました。");
             }
+        }
+
+        // フォームをクリアする関数（場所選択状態は維持）
+        function clearForm() {
+            const form = document.getElementById('bookForm');
+            // フォーム内要素リセット (locationSelect は form 外なので影響なし)
+            form.reset();
+            // ISBN もresetで消えるが念のため
+            document.getElementById('isbn').value = '';
+            document.getElementById('title').value = '';
+            document.getElementById('author').value = '';
+            document.getElementById('publisher').value = '';
+            document.getElementById('issueYear').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('category').value = '';
+            // 独自分類
+            const originalCategoryContainer = document.getElementById('originalCategoryContainer');
+            const originalCategorySelect = document.getElementById('originalCategory');
+            if (originalCategoryContainer && originalCategoryContainer.style.display !== 'none' && originalCategorySelect) {
+                originalCategorySelect.selectedIndex = -1; // 選択解除
+            }
+            // サムネイル関連
+            const thumbnailImg = document.getElementById('bookThumbnail');
+            const thumbnailMsg = document.getElementById('thumbnailMessage');
+            thumbnailImg.style.display = 'none';
+            thumbnailImg.src = '';
+            thumbnailMsg.style.display = 'none';
+            thumbnailMsg.textContent = '';
+            // hidden フラグ
+            document.getElementById('thumbnail_exists').value = 'false';
+            document.getElementById('hit_ndl').value = 'false';
+            // 位置は維持 (locationToRegister も変更なし)
         }
     </script>
 </body>

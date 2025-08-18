@@ -131,10 +131,6 @@ def book_registration():
 def fetch_book_info_route():
     return api_fetch_book_info()
 
-#@app.route('/api/register_book', methods=['POST'])
-#def register_book_route():
-#    return api_register_book()
-
 # APIエンドポイント: 書籍登録
 @app.route('/api/register_book', methods=['POST'])
 def api_register_book():

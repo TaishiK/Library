@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql+psycopg2://kunori:taishi@db:5432/libraries
+    depends_on:
+      - db
+
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_USER: kunori
+      POSTGRES_PASSWORD: taishi
+      POSTGRES_DB: libraries
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

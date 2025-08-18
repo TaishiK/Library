@@ -83,3 +83,15 @@ to07_categories_port_scまたはt07_categories_port_scmmのカラムcategory_id�
 「独自分類」がt07_categories_port_scまたはt07_categories_port_scmmより指定された
 場合、その指定されたcategory_idをテーブルt00_instance_idsのカラムown_category_idに
 書き込むようプログラムを修正して下さい。
+
+/templates/book_registeration.htmlにおいて、ISBN入力用テキストボックスのサイズを半分程度にして
+現状ISBNラベルの下に配置されている「書籍情報取得」ボタンを先述のテキストボックスの右隣に配置して下さい。
+
+「登録」ボタンの左に「管理メニュー」ボタンを追加し、フォーム内で左右に均等になるようにこの２つのボタンを
+レイアウトし直してください。「管理メニュー」ボタンが押された時、/templates/control_menu.htmlに画面遷移
+するようにして下さい。
+
+「管理メニュー」ボタンの高さを「登録」ボタンに合わせて下さい。
+
+/templates/book_registration.html において「管理メニュー」ボタンと「登録」ボタンの間に「クリア」ボタンを
+作成、「クリア」ボタンを押すと、ISBN～分類の各テキストボックスの値をクリア（削除）するように設定して下さい。
