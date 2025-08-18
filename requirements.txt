@@ -5,4 +5,4 @@ python-ldap==3.3.1
 ldap3==2.9
 python-dotenv==0.19.2
 requests==2.26.0
-nfcpy==0.15.0
+#nfcpy==0.15.0

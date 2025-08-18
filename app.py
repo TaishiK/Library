@@ -4,7 +4,7 @@ import requests
 import xml.etree.ElementTree as ET
 from flask import Flask, g, render_template, request, jsonify
 from datetime import datetime # instanceid生成用
-import nfc
+#import nfc
 import binascii
 import ldap # python-ldap ライブラリをインポート
 import ldap.sasl # SASL認証のためにインポート
