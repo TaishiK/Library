@@ -111,6 +111,75 @@ def fetch_from_ndl(isbn):
         print(f"NDL API error: {e}")
         return None
 
+def fetch_from_google(isbn):
+    # Google Books API でISBN検索
+    url = 'https://www.googleapis.com/books/v1/volumes'
+    params = { 'q': f'isbn:{isbn}' }
+    try:
+        r = requests.get(url, params=params, timeout=10)
+        r.raise_for_status()
+        data = r.json()
+        if data.get('totalItems', 0) == 0:
+            return None
+        item = data['items'][0]
+        vi = item.get('volumeInfo', {})
+        title = vi.get('title', '')
+        authors = vi.get('authors', [])
+        author = ', '.join(authors)
+        publisher = vi.get('publisher', '')
+        publishedDate = vi.get('publishedDate', '')
+        issue_year = ''
+        if publishedDate:
+            # 年だけ抽出
+            import re
+            m = re.match(r'(\d{4})', publishedDate)
+            if m:
+                issue_year = m.group(1)
+        # Google Books には価格直接無い場合多い -> 0
+        price = 0
+        # 分類: industryIdentifiersやcategoriesなど
+        category = ''
+        categories = vi.get('categories', [])
+        if categories:
+            # 最初のカテゴリーの先頭数字があれば採用
+            import re
+            m = re.search(r'(\d)', categories[0])
+            if m:
+                category = m.group(1)
+        # サムネイル
+        image_links = vi.get('imageLinks', {})
+        thumbnail_url = image_links.get('thumbnail') or image_links.get('smallThumbnail')
+        thumbnail_exists = bool(thumbnail_url)
+        # Googleサムネイルを保存(オリジンHTTP->HTTPS 変換 & サイズ調整除外)
+        if thumbnail_exists:
+            try:
+                thumbnails_dir = os.path.join(app.root_path, 'static', 'thumbnails')
+                os.makedirs(thumbnails_dir, exist_ok=True)
+                thumbnail_filename = f"{isbn}.jpg"
+                thumbnail_save_path = os.path.join(thumbnails_dir, thumbnail_filename)
+                if not os.path.exists(thumbnail_save_path):
+                    img_response = requests.get(thumbnail_url, stream=True, timeout=10)
+                    img_response.raise_for_status()
+                    with open(thumbnail_save_path, 'wb') as f:
+                        for chunk in img_response.iter_content(1024):
+                            f.write(chunk)
+            except Exception as e:
+                print('Failed saving google thumbnail:', e)
+        return {
+            'title': title,
+            'author': author,
+            'publisher': publisher,
+            'issueyear': issue_year,
+            'price': price,
+            'category': category,
+            'thumbnail_url': thumbnail_url,
+            'thumbnail_exists': thumbnail_exists,
+            'hit_ndl': False  # NDLヒットではない
+        }
+    except Exception as e:
+        print('Google Books API error:', e)
+        return None
+
 def register_isbn_data(isbn, title, author, publisher, issueyear, price, category, thumbnail_exists):
     try:
         # 型変換・必須値チェック
@@ -205,6 +274,29 @@ def api_fetch_book_info():
             "thumbnail_url": f"https://ndlsearch.ndl.go.jp/thumbnail/{isbn_cleaned}.jpg",
             "thumbnail_exists": False,
             "hit_ndl": False
+        })
+
+def api_fetch_book_info_google():
+    data = request.get_json()
+    isbn = data.get('isbn')
+    if not isbn:
+        return jsonify({'error': 'isbn is required'}), 400
+    isbn_cleaned = isbn.replace('-', '')
+    book_info = fetch_from_google(isbn_cleaned)
+    if book_info:
+        return jsonify(book_info)
+    else:
+        # 失敗時は空のテンプレ返却
+        return jsonify({
+            'title': '',
+            'author': '',
+            'publisher': '',
+            'issueyear': '',
+            'price': 0,
+            'category': '',
+            'thumbnail_url': None,
+            'thumbnail_exists': False,
+            'hit_ndl': False
         })
 
 def api_register_book():

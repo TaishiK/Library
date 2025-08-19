@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>海外書籍登録 (Google Books)</title>
+<style>
+    body { font-family: sans-serif; }
+    h1 { text-align:center; }
+    form { width:500px; margin:0 auto; padding:20px; border:1px solid #ccc; }
+    label { display:inline-block; width:100px; text-align:right; margin-right:10px; }
+    input[type=text], input[type=number] { width:300px; padding:5px; border:1px solid #ccc; }
+    button { padding:6px 10px; cursor:pointer; }
+    .isbn-row { display:flex; align-items:center; gap:8px; margin-bottom:12px; margin-left:60px; }
+    .isbn-row label { width:auto; margin-right:5px; }
+    #isbn { width:185px; }
+    .location-select-container { position:absolute; top:20px; right:50px; width:350px; padding:10px; display:flex; align-items:center; gap:10px; }
+    .location-select-container select { padding:8px; width:90%; }
+    .form-buttons { display:flex; justify-content:space-between; gap:30px; margin-top:25px; }
+    .form-buttons button { flex:1; max-width:160px; padding:10px; height:44px; display:flex; align-items:center; justify-content:center; }
+    #thumbnailContainer { margin-top:10px; text-align:center; min-height:150px; }
+</style>
+</head>
+<body>
+<div class="location-select-container">
+    <label for="locationSelect">場所:</label>
+    <select id="locationSelect" name="location"></select>
+</div>
+<h1>海外書籍登録 (Google Books)</h1>
+<form id="bookForm">
+    <div class="isbn-row">
+        <label for="isbn">ISBN:</label>
+        <input type="text" id="isbn" name="isbn" style="ime-mode:inactive;">
+        <button type="button" onclick="fetchBookInfoGoogle()">書籍情報取得</button>
+    </div>
+    <div id="thumbnailContainer">
+        <img id="bookThumbnail" src="" alt="書影" style="max-width:100px; max-height:150px; display:none; border:1px solid #ccc;">
+        <p id="thumbnailMessage" style="display:none; margin-top:5px; font-size:0.9em; color:#666;"></p>
+    </div>
+    <br><br>
+    <label for="title">タイトル:</label>
+    <input type="text" id="title" name="title"><br><br>
+    <label for="author">著者:</label>
+    <input type="text" id="author" name="author"><br><br>
+    <label for="publisher">出版社:</label>
+    <input type="text" id="publisher" name="publisher"><br><br>
+    <label for="issueYear">発行年:</label>
+    <input type="text" id="issueYear" name="issueYear"><br><br>
+    <label for="price">価格:</label>
+    <input type="number" id="price" name="price"><br><br>
+    <label for="categorySelect">書籍分類:</label>
+    <select id="categorySelect" name="categorySelect" style="width:300px; padding:5px; border:1px solid #ccc;"></select><br><br>
+    <input type="hidden" id="thumbnail_exists" value="false">
+    <input type="hidden" id="hit_ndl" value="false">
+    <div class="form-buttons">
+        <button type="button" onclick="location.href='/control_menu.html'">管理メニュー</button>
+        <button type="button" onclick="clearForm()">クリア</button>
+        <button type="submit" onclick="registerBook(event)">登録</button>
+    </div>
+</form>
+<h2>登録データ一覧</h2>
+<table id="bookTable" style="width:80%; margin:20px auto; border-collapse:collapse;">
+    <thead>
+        <tr>
+            <th style="border:1px solid #ccc; padding:8px;">InstanceID</th>
+            <th style="border:1px solid #ccc; padding:8px;">ISBN</th>
+            <th style="border:1px solid #ccc; padding:8px;">タイトル</th>
+            <th style="border:1px solid #ccc; padding:8px;">著者</th>
+            <th style="border:1px solid #ccc; padding:8px;">出版社</th>
+            <th style="border:1px solid #ccc; padding:8px;">発行年</th>
+            <th style="border:1px solid #ccc; padding:8px;">価格</th>
+            <th style="border:1px solid #ccc; padding:8px;">書籍分類</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for book in books %}
+        <tr>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.instance_id }}</td>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.isbn }}</td>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.title }}</td>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.author }}</td>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.publisher }}</td>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.issue_year }}</td>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.price }}</td>
+            <td style="border:1px solid #ccc; padding:8px;">{{ book.category_id }}</td>
+        </tr>
+    {% else %}
+        <tr><td colspan="8" style="text-align:center; color:#888; border:1px solid #ccc; padding:8px;">登録データはありません</td></tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% include 'my_messagebox.html' %}
+<script>
+var locationToRegister='';
+var flagLoaded=false;
+async function getPcLocation(){
+    try{ const r=await fetch('/api/get_location_by_serial'); const j=await r.json(); return j.location||null; }catch(e){return null;}
+}
+async function checkLocationMatchAndPrompt(sel){
+    const pcLoc=await getPcLocation();
+    if(pcLoc){
+        if(window.flagLoaded===false){ window.flagLoaded=true; sel.value=pcLoc; }
+        locationToRegister=sel.value;
+        if(sel.value!==pcLoc){
+            showCustomAlert('選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で登録する場合「いいえ」、登録を中止する場合「キャンセル」を押して下さい。',3,function(btn){
+                if(btn==='yes'){ locationToRegister=sel.value; }
+                else if(btn==='no'){ locationToRegister=pcLoc; sel.value=pcLoc; }
+                else{ window.location.href='/'; }
+            });
+        }
+    }else{
+        showCustomAlert('PCの場所の取得に失敗しました。手動で場所を選択してください。',1);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', async function(){
+    const sel=document.getElementById('locationSelect');
+    try{ const r=await fetch('/api/locations'); const j=await r.json(); if(j.success){ j.locations.forEach(l=>{ const o=document.createElement('option'); o.value=l.location; o.textContent=`${l.location} (${l.library_name})`; sel.appendChild(o); }); sel.focus(); } }catch(e){}
+    await checkLocationMatchAndPrompt(sel);
+    sel.addEventListener('change', async function(){ await checkLocationMatchAndPrompt(sel); await loadCategoryOptions(); });
+    await loadCategoryOptions();
+});
+
+async function loadCategoryOptions(){
+    const loc = document.getElementById('locationSelect').value;
+    const catSel = document.getElementById('categorySelect');
+    if(!loc){ return; }
+    catSel.innerHTML = '';
+    try {
+        const r = await fetch(`/api/location_category_table?location=${loc}`);
+        const j = await r.json();
+        if(!j.success){ return; }
+        const tableName = j.category_table;
+        const r2 = await fetch(`/api/categories?table_name=${tableName}`);
+        const j2 = await r2.json();
+        if(!j2.success){ return; }
+        j2.categories.forEach(c => {
+            const o = document.createElement('option');
+            o.value = c.category_id;
+            o.textContent = `${c.category_id} (${c.category})`;
+            catSel.appendChild(o);
+        });
+    } catch(e){ console.error('カテゴリ取得失敗', e); }
+}
+
+async function fetchBookInfoGoogle(){
+    const isbn=document.getElementById('isbn').value.replace(/-/g,'');
+    if(!isbn){ alert('ISBNを入力してください'); return; }
+    // クリア
+    ['title','author','publisher','issueYear','price','category'].forEach(id=> document.getElementById(id) && (document.getElementById(id).value=''));
+    const catSel=document.getElementById('categorySelect'); if(catSel){ catSel.selectedIndex=-1; }
+    const thumb=document.getElementById('bookThumbnail'); const msg=document.getElementById('thumbnailMessage');
+    thumb.style.display='none'; thumb.src=''; msg.style.display='none'; msg.textContent='';
+    try{
+        const resp=await fetch('/api/fetch_book_info_google',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({isbn}) });
+        const data=await resp.json();
+        document.getElementById('title').value=data.title||'';
+        document.getElementById('author').value=data.author||'';
+        document.getElementById('publisher').value=data.publisher||'';
+        document.getElementById('issueYear').value=data.issueyear||'';
+        document.getElementById('price').value=data.price||0;
+        document.getElementById('category').value=data.category||'';
+        document.getElementById('hit_ndl').value='false';
+        if(data.thumbnail_exists && data.thumbnail_url){ thumb.onload=()=>{ thumb.style.display='block'; }; thumb.onerror=()=>{ thumb.style.display='none'; msg.style.display='block'; msg.textContent='書影が表示できません'; }; thumb.src=data.thumbnail_url; document.getElementById('thumbnail_exists').value='true'; }
+        else { document.getElementById('thumbnail_exists').value='false'; msg.style.display='block'; msg.textContent='書影なし'; }
+    }catch(e){ console.error(e); alert('取得失敗'); }
+}
+
+async function registerBook(e){
+    e.preventDefault();
+    const isbn=document.getElementById('isbn').value;
+    if(!isbn){ alert('ISBNを入力してください'); return; }
+    const categoryVal = document.getElementById('categorySelect').value;
+    const locNow = window.locationToRegister;
+    const isPort = (locNow === 'PORT 品川' || locNow === 'PORT みなとみらい');
+    const payload={
+        isbn:isbn,
+        title:document.getElementById('title').value,
+        author:document.getElementById('author').value,
+        publisher:document.getElementById('publisher').value,
+        issueyear:document.getElementById('issueYear').value,
+        price:document.getElementById('price').value,
+        category:categoryVal, // t01_isbns.category_id には従来通り送付
+        hit_ndl:false,
+        location:locNow,
+        own_category_id: isPort ? categoryVal : null, // 指定2拠点のみ own_category_id に格納
+        thumbnail_exists: document.getElementById('thumbnail_exists').value==='true'
+    };
+    try{
+        const r=await fetch('/api/register_book',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+        const j=await r.json();
+        if(j.success){ alert('登録完了 InstanceID:'+j.instance_id); window.location.reload(); }
+        else { alert('登録失敗:'+ (j.error||'不明')); }
+    }catch(err){ alert('通信エラー'); }
+}
+function clearForm(){
+    const form=document.getElementById('bookForm'); form.reset();
+    ['isbn','title','author','publisher','issueYear','price','category'].forEach(id=> document.getElementById(id) && (document.getElementById(id).value=''));
+    const catSel2=document.getElementById('categorySelect'); if(catSel2){ catSel2.selectedIndex=-1; }
+    const thumb=document.getElementById('bookThumbnail'); const msg=document.getElementById('thumbnailMessage'); thumb.style.display='none'; thumb.src=''; msg.style.display='none'; msg.textContent='';
+    document.getElementById('thumbnail_exists').value='false'; document.getElementById('hit_ndl').value='false';
+}
+</script>
+</body>
+</html>

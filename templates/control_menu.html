@@ -43,6 +43,8 @@
         if(adminBtn){ adminBtn.addEventListener('click', ()=> { window.location.href = '/register_administrator.html'; }); }
         const mainBtn = document.getElementById('gotoMainMenu');
         if(mainBtn){ mainBtn.addEventListener('click', ()=> { window.location.href = '/'; }); }
+        const foreignBtn = Array.from(document.getElementsByClassName('btn')).find(b=>b.textContent.includes('海外書籍登録'));
+        if(foreignBtn){ foreignBtn.addEventListener('click', ()=> { window.location.href='/book_regist_by_google'; }); }
     });
     </script>
 </body>

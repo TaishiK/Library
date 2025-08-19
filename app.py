@@ -25,6 +25,7 @@ from models import db, t01_isbns, t00_instance_ids, t02_users, t03_administrator
 from models import db, t07_categories_ndc, t07_categories_c, t07_categories_port_sc, t07_categories_port_scmm
 from ldap_utils import get_ldap_user_info_python
 from book_utils import api_fetch_book_info, api_register_book, register_isbn_data, register_instance_data
+from book_utils import api_fetch_book_info_google
 from lent_utils import api_register_lent_record, api_return_book, api_check_lent_status
 
 #DATABASE = 'Libraries.db' # SQLite用のデータベースファイル名
@@ -126,10 +127,29 @@ def book_registration():
     books = books.order_by(t00_instance_ids.instance_id.desc()).all()
     return render_template('book_registration.html', books=books)
 
+@app.route('/book_regist_by_google')
+def book_regist_by_google():
+    books = db.session.query(
+        t00_instance_ids.instance_id.label('instance_id'),
+        t00_instance_ids.isbn.label('isbn'),
+        func.coalesce(t01_isbns.title, 'N/A').label('title'),
+        func.coalesce(t01_isbns.author, 'N/A').label('author'),
+        func.coalesce(t01_isbns.publisher, 'N/A').label('publisher'),
+        func.coalesce(t01_isbns.issue_year, 'N/A').label('issue_year'),
+        func.coalesce(t01_isbns.price, 0).label('price'),
+        func.coalesce(t01_isbns.category_id, 'N/A').label('category_id')
+    ).outerjoin(t01_isbns, t00_instance_ids.isbn == t01_isbns.isbn)
+    books = books.order_by(t00_instance_ids.instance_id.desc()).all()
+    return render_template('book_regist_by_google.html', books=books)
+
 # --- NDL検索・書籍登録・インスタンス登録API ---
 @app.route('/api/fetch_book_info', methods=['POST'])
 def fetch_book_info_route():
     return api_fetch_book_info()
+
+@app.route('/api/fetch_book_info_google', methods=['POST'])
+def fetch_book_info_google_route():
+    return api_fetch_book_info_google()
 
 # APIエンドポイント: 書籍登録
 @app.route('/api/register_book', methods=['POST'])
@@ -326,6 +346,8 @@ def get_categories():
             model = t07_categories_port_sc
         elif table_name == 't07_categories_port_scmm':
             model = t07_categories_port_scmm
+        elif table_name == 't07_categories_ndc':  # 追加: NDC
+            model = t07_categories_ndc
         else:
             return jsonify({"success": False, "error": "Invalid table name"}), 400
 

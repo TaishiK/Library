@@ -1,0 +1,21 @@
+/templates/book_regist_by_google.htmlを作成します。
+/templates/book_registration.htmlでは国立国会図書館サーチAPIで書籍情報を取得しましたが
+/templates/book_regist_by_google.htmlではGoogle Books APIで(主に海外)書籍情報を取得します。
+１．ISBNをキーに検索し書籍情報を得る
+２．作成済の/templates/book_registration.htmmlと可能な限り同じ画面構成とする。
+３．作成済の/templates/book_registration.htmlやapp.py, book_util.pyのコードを
+　　できるだけ流用し、類似関数等の重複を避ける。
+上記方針で/templates/book_regist_by_google.htmlの作成とapp.pyやbook_utils.pyの必要な
+変更を行ってください。
+
+素晴らしいです。が、私の指示漏れがあり申し訳ありません。Google Books APIでは書籍分類の項目が
+ありません。/templates/book_regist_by_google.htmlでは、画面右上の「場所」コンボボックスで
+選択されたt04_locationsテーブルのlocationに対して決まるカラムcategory_tableの値と同じ
+名前のテーブルのカラムcategory_id及び（category）を選択肢として表示するコンボボックスから
+「書籍分類」を選択するように変更して下さい。
+
+/templates/book_regist_by_google.htmlにおいて「場所」コンボボックスで 「PORT 品川」又は
+「PORT みなとみらい」が選択されたときはコンボボックス「書籍分類」で選択された category_id値を
+「登録」ボタンが押された時t00_instance_idsに書籍情報を書き込む際、カラムown_category_idに
+書き込むように変更して下さい。
+
