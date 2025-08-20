@@ -24,7 +24,7 @@
 
         <button type="button" class="btn btn-medium">ダミー２</button>
         <button type="button" class="btn btn-medium">貸出中書籍一覧・督促</button>
-        <button type="button" class="btn btn-medium">非定形書籍・備品登録</button>
+        <button type="button" class="btn btn-medium">非定型書籍・備品登録</button>
 
         <button type="button" id="gotoMainMenu" class="btn btn-medium">メインメニュー</button>
         <button type="button" class="btn btn-medium">棚情報管理</button>
@@ -45,6 +45,8 @@
         if(mainBtn){ mainBtn.addEventListener('click', ()=> { window.location.href = '/'; }); }
         const foreignBtn = Array.from(document.getElementsByClassName('btn')).find(b=>b.textContent.includes('海外書籍登録'));
         if(foreignBtn){ foreignBtn.addEventListener('click', ()=> { window.location.href='/book_regist_by_google'; }); }
+        const manualBtn = Array.from(document.getElementsByClassName('btn')).find(b=>b.textContent.includes('非定型書籍・備品'));
+        if(manualBtn){ manualBtn.addEventListener('click', ()=> { window.location.href='/manual_registration'; }); }
     });
     </script>
 </body>

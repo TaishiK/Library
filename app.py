@@ -20,6 +20,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, ForeignKey
 from sqlalchemy.orm import relationship
 import logging 
+import random
 logging.getLogger('salalchemy.engine').setLevel(logging.WARNING)  # SQLAlchemyのログレベルをINFO or WARNINGに設定
 from models import db, t01_isbns, t00_instance_ids, t02_users, t03_administrators, t04_locations, t05_lent_records, t06_return_records
 from models import db, t07_categories_ndc, t07_categories_c, t07_categories_port_sc, t07_categories_port_scmm
@@ -141,6 +142,21 @@ def book_regist_by_google():
     ).outerjoin(t01_isbns, t00_instance_ids.isbn == t01_isbns.isbn)
     books = books.order_by(t00_instance_ids.instance_id.desc()).all()
     return render_template('book_regist_by_google.html', books=books)
+
+@app.route('/manual_registration')
+def manual_registration():
+    books = db.session.query(
+        t00_instance_ids.instance_id.label('instance_id'),
+        t00_instance_ids.isbn.label('isbn'),
+        func.coalesce(t01_isbns.title, 'N/A').label('title'),
+        func.coalesce(t01_isbns.author, 'N/A').label('author'),
+        func.coalesce(t01_isbns.publisher, 'N/A').label('publisher'),
+        func.coalesce(t01_isbns.issue_year, 'N/A').label('issue_year'),
+        func.coalesce(t01_isbns.price, 0).label('price'),
+        func.coalesce(t01_isbns.category_id, 'N/A').label('category_id')
+    ).outerjoin(t01_isbns, t00_instance_ids.isbn == t01_isbns.isbn)
+    books = books.order_by(t00_instance_ids.instance_id.desc()).all()
+    return render_template('manual_registration.html', books=books)
 
 # --- NDL検索・書籍登録・インスタンス登録API ---
 @app.route('/api/fetch_book_info', methods=['POST'])
@@ -395,6 +411,17 @@ def api_location_detail():
         # logo列未定義対応: getattrで安全取得
         logo = getattr(row, 'logo', None)
         return jsonify({'success': True, 'location': row.location, 'library_name': row.library_name, 'logo': logo})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/generate_dummy_isbn')
+def generate_dummy_isbn():
+    try:
+        for _ in range(50):
+            candidate = str(random.randint(10**12, 10**13 - 1))  # 13桁
+            if not db.session.get(t01_isbns, candidate):
+                return jsonify({'success': True, 'isbn': candidate})
+        return jsonify({'success': False, 'error': 'Failed to generate unique ISBN'}), 500
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

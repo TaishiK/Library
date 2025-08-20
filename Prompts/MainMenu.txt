@@ -46,3 +46,11 @@
 /templates/main_menu.htmlを改造します。PC名を取得し、それをキーにt04_locationsテーブルのpc_nameカラムを検索、該当行のlibrary_nameカラムの
 値を取得します。画面中央に表示されている/static/images/BoyGirlBooks.jpgの上部に「ようこそ、」＋ '取得したlibrary_name値' + 「へ！」
 と表示するようにして下さい。
+
+/templates/main_menu.htmlを変更します。
+現状、画面上側に「管理メニュー」「棚番号確認」「終了」「最終操作確認」の各ボタンが <header>タグの中にあります。また、
+「貸出」「返却」ボタンは<footer>タグの中にあります。<header>,<footer>の背景色を画面中央と同じ色にして下さい。
+
+/templates/main_menu.htmlの２５行目の画像ファイルは画面上、上側に寄りすぎです。上下方向の真ん中付近に配置してください。
+main_menu.htmlの２３行目「ようこそ、{{ library_name }}へ！｝が画面左上に表示されるようになりました。
+これを画面中央の画像ファイルの上に配置されるよう変更して下さい。

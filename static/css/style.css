@@ -55,6 +55,8 @@ main {
     border-top: 1px solid #ccc;
 }
 
+.main-menu-header, .main-menu-footer { background-color: #f4f4f4 !important; border: none; }
+
 /* control_menu.html レイアウト */
 .control-menu-grid {
     display: grid;
@@ -107,6 +109,13 @@ main {
     border: 0;
 }
 
+/* カラフルボタン */
+.btn-fetch { background-color:#1976d2; color:#fff; }
+.btn-fetch:hover { background-color:#115293; }
+.btn-clear { background-color:#ff9800; color:#212121; }
+.btn-clear:hover { background-color:#fb8c00; }
+.btn-register { background-color:#2e7d32; color:#fff; }
+.btn-register:hover { background-color:#1b5e20; }
 
 /* ボタンサイズ別スタイル */
 .btn-small {

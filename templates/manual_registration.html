@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>非定型書籍・備品登録</title>
+<style>
+ body { font-family:sans-serif; }
+ h1 { text-align:center; }
+ form { width:500px; margin:0 auto; padding:20px; border:1px solid #ccc; }
+ label { display:inline-block; width:100px; text-align:right; margin-right:10px; }
+ input[type=text], input[type=number] { width:300px; padding:5px; border:1px solid #ccc; }
+ button { padding:6px 10px; cursor:pointer; }
+ .isbn-row { display:flex; align-items:center; gap:8px; margin-bottom:12px; margin-left:60px; }
+ .isbn-row label { width:auto; margin-right:5px; }
+ #isbn { width:185px; }
+ .location-select-container { position:absolute; top:20px; right:50px; width:350px; padding:10px; display:flex; align-items:center; gap:10px; }
+ .location-select-container select { padding:8px; width:90%; }
+ .form-buttons { display:flex; justify-content:space-between; gap:30px; margin-top:25px; }
+ .form-buttons button { flex:1; max-width:160px; padding:10px; height:44px; display:flex; align-items:center; justify-content:center; }
+</style>
+</head>
+<body>
+<div class="location-select-container">
+  <label for="locationSelect">場所:</label>
+  <select id="locationSelect" name="location"></select>
+</div>
+<h1>非定型書籍・備品登録</h1>
+<form id="manualForm">
+  <div class="isbn-row">
+    <label for="isbn">ISBN:</label>
+    <input type="text" id="isbn" name="isbn" style="ime-mode:inactive;">
+    <button type="button" onclick="generateDummyISBN()">ダミーISBN取得</button>
+  </div>
+  <label for="title">タイトル / 品名:</label>
+  <input type="text" id="title" name="title"><br><br>
+  <label for="author">著者 / メーカー:</label>
+  <input type="text" id="author" name="author"><br><br>
+  <label for="publisher">出版社 / 型番:</label>
+  <input type="text" id="publisher" name="publisher"><br><br>
+  <label for="issueYear">発行年 / 年度:</label>
+  <input type="text" id="issueYear" name="issueYear"><br><br>
+  <label for="price">価格:</label>
+  <input type="number" id="price" name="price"><br><br>
+  <label for="categorySelect">書籍等分類:</label>
+  <select id="categorySelect" name="categorySelect" style="width:300px; padding:5px; border:1px solid #ccc;"></select><br><br>
+  <input type="hidden" id="thumbnail_exists" value="false">
+  <input type="hidden" id="hit_ndl" value="false">
+  <div class="form-buttons">
+    <button type="button" onclick="location.href='/control_menu.html'">管理メニュー</button>
+    <button type="button" onclick="clearForm()">クリア</button>
+    <button type="submit" onclick="registerManual(event)">登録</button>
+  </div>
+</form>
+<h2>登録データ一覧</h2>
+<table style="width:80%; margin:20px auto; border-collapse:collapse;" id="manualTable">
+ <thead><tr>
+  <th style="border:1px solid #ccc; padding:8px;">InstanceID</th>
+  <th style="border:1px solid #ccc; padding:8px;">ISBN</th>
+  <th style="border:1px solid #ccc; padding:8px;">タイトル/品名</th>
+  <th style="border:1px solid #ccc; padding:8px;">著者/メーカー</th>
+  <th style="border:1px solid #ccc; padding:8px;">出版社/型番</th>
+  <th style="border:1px solid #ccc; padding:8px;">発行年/年度</th>
+  <th style="border:1px solid #ccc; padding:8px;">価格</th>
+  <th style="border:1px solid #ccc; padding:8px;">分類</th>
+ </tr></thead>
+ <tbody>
+ {% for book in books %}
+ <tr>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.instance_id }}</td>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.isbn }}</td>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.title }}</td>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.author }}</td>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.publisher }}</td>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.issue_year }}</td>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.price }}</td>
+  <td style="border:1px solid #ccc; padding:8px;">{{ book.category_id }}</td>
+ </tr>
+ {% else %}
+ <tr><td colspan="8" style="text-align:center; color:#888; border:1px solid #ccc; padding:8px;">登録データはありません</td></tr>
+ {% endfor %}
+ </tbody>
+</table>
+{% include 'my_messagebox.html' %}
+<script>
+var locationToRegister='';
+var flagLoaded=false;
+async function getPcLocation(){ try{ const r=await fetch('/api/get_location_by_serial'); const j=await r.json(); return j.location||null;}catch(e){return null;} }
+async function checkLocationMatchAndPrompt(sel){
+ const pcLoc=await getPcLocation();
+ if(pcLoc){ if(!flagLoaded){ flagLoaded=true; sel.value=pcLoc; } locationToRegister=sel.value; if(sel.value!==pcLoc){
+  showCustomAlert('選択した場所とPC名が一致しません。選択した場所で登録する場合「はい」、PC名の場所で登録する場合「いいえ」、登録を中止する場合「キャンセル」を押して下さい。',3,(b)=>{
+   if(b==='yes'){ locationToRegister=sel.value; } else if(b==='no'){ locationToRegister=pcLoc; sel.value=pcLoc; } else { window.location.href='/'; }
+  });
+ } } else { showCustomAlert('PCの場所の取得に失敗しました。手動で場所を選択してください。',1);} }
+
+document.addEventListener('DOMContentLoaded', async ()=>{
+ const sel=document.getElementById('locationSelect');
+ try{ const r=await fetch('/api/locations'); const j=await r.json(); if(j.success){ j.locations.forEach(l=>{ const o=document.createElement('option'); o.value=l.location; o.textContent=`${l.location} (${l.library_name})`; sel.appendChild(o); }); sel.focus(); } }catch(e){}
+ await checkLocationMatchAndPrompt(sel);
+ sel.addEventListener('change', async ()=>{ await checkLocationMatchAndPrompt(sel); await loadCategoryOptions(); });
+ await loadCategoryOptions();
+});
+
+async function loadCategoryOptions(){
+ const loc=document.getElementById('locationSelect').value; const catSel=document.getElementById('categorySelect'); if(!loc) return; catSel.innerHTML='';
+ try{ const r=await fetch(`/api/location_category_table?location=${loc}`); const j=await r.json(); if(!j.success) return; const tableName=j.category_table; const r2=await fetch(`/api/categories?table_name=${tableName}`); const j2=await r2.json(); if(!j2.success) return; j2.categories.forEach(c=>{ const o=document.createElement('option'); o.value=c.category_id; o.textContent=`${c.category_id} (${c.category})`; catSel.appendChild(o); }); }catch(e){ console.error(e);} }
+
+async function generateDummyISBN(){
+ try{
+  const r=await fetch('/api/generate_dummy_isbn'); const j=await r.json(); if(j.success){ document.getElementById('isbn').value=j.isbn; } else { alert('ダミーISBN生成失敗'); }
+ }catch(e){ alert('通信エラー'); }
+}
+
+async function registerManual(e){
+ e.preventDefault();
+ const isbn=document.getElementById('isbn').value; if(!isbn){ alert('ダミーISBN取得してください'); return; }
+ const locNow=locationToRegister; const catVal=document.getElementById('categorySelect').value; const isPort=(locNow==='PORT 品川'|| locNow==='PORT みなとみらい');
+ const payload={ isbn:isbn, title:document.getElementById('title').value, author:document.getElementById('author').value, publisher:document.getElementById('publisher').value, issueyear:document.getElementById('issueYear').value, price:document.getElementById('price').value, category:catVal, hit_ndl:false, location:locNow, own_category_id: isPort ? catVal : null, thumbnail_exists:false };
+ try{ const r=await fetch('/api/register_book',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) }); const j=await r.json(); if(j.success){ alert('登録完了 InstanceID:'+j.instance_id); window.location.reload(); } else { alert('登録失敗:'+ (j.error||'不明')); } }catch(err){ alert('通信エラー'); }
+}
+function clearForm(){ const form=document.getElementById('manualForm'); form.reset(); document.getElementById('isbn').value=''; document.getElementById('title').value=''; document.getElementById('author').value=''; document.getElementById('publisher').value=''; document.getElementById('issueYear').value=''; document.getElementById('price').value=''; const cs=document.getElementById('categorySelect'); if(cs) cs.selectedIndex=-1; }
+</script>
+</body>
+</html>

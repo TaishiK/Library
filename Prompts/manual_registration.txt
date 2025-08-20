@@ -1,0 +1,11 @@
+/templates/manual_registration.html を作成します。
+１．目的：ISBNが不明である書籍、あるいはISBNがあっても国会図書館サーチAPIやGoogle Books APIに検索で該当するものが無い書籍、あるいはそもそも
+　　　書籍ではない備品（電子機器等）の貸出・返却を管理するためのt00_instance_ids, t01_isbnsへのデータ登録フォームとします。
+２．/templates/control_menu.html の「非定型書籍・備品等登録」ボタンから画面遷移するものとします。
+３．画面の視覚的構成は/templates/book_regist_by_google.html と同等とします。画面右上に「場所」選択のコンボボックス、
+　　その選択に従って「書籍等分類」コンボボックスの表示元テーブルを設定する方式も/templates/book_regist_by_google.htmlと
+　　同等にします。
+４．/templates/book_regist_by_google.htmlの「書籍情報取得」ボタンはラベルを「ダミーISBN取得」とし、その動作内容は
+　　t01_isbnsテーブルのカラムisbnの既存の値と一致しないことが確認された13桁の乱数を取得しテキストボックスに入力するものとして下さい。
+５．「管理メニュー」、「クリア」、「登録」各ボタンの動作も/templates/book_regist_by_google.htmlと同等とし、app.py. book_utils.pyの
+　　既存機能・関数をできるだけ流用して下さい。

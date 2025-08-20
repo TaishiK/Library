@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>書籍管理システム - メインメニュー</title>
     <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .hero { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:20px 0; }
+        .hero-text { font-size:2.2em; font-weight:bold; margin:0 0 25px; color:#2c3e50; text-shadow:1px 1px 2px #fff; text-align:center; }
+        .hero img { max-width:500px; height:auto; display:block; }
+        @media (max-height:700px){ .hero { justify-content:flex-start; padding-top:60px; } }
+    </style>
 </head>
 <body>
     <header class="main-menu-header">
@@ -18,10 +24,8 @@
         </div>
     </header>
 
-    <main style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-        <div style="font-size: 2.2em; font-weight: bold; margin-bottom: 20px; color: #2c3e50; text-shadow: 1px 1px 2px #fff;">
-            ようこそ、{{ library_name }}へ！
-        </div>
+    <main class="hero">
+        <div class="hero-text">ようこそ、{{ library_name }}へ！</div>
         <img src="../static/images/BoyGirlBooks.jpg" alt="本の写真" class="center-image">
     </main>
 

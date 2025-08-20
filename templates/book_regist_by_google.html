@@ -19,6 +19,7 @@
     .form-buttons button { flex:1; max-width:160px; padding:10px; height:44px; display:flex; align-items:center; justify-content:center; }
     #thumbnailContainer { margin-top:10px; text-align:center; min-height:150px; }
 </style>
+<link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 <div class="location-select-container">
@@ -30,7 +31,7 @@
     <div class="isbn-row">
         <label for="isbn">ISBN:</label>
         <input type="text" id="isbn" name="isbn" style="ime-mode:inactive;">
-        <button type="button" onclick="fetchBookInfoGoogle()">書籍情報取得</button>
+        <button type="button" class="btn btn-fetch" onclick="fetchBookInfoGoogle()">書籍情報取得</button>
     </div>
     <div id="thumbnailContainer">
         <img id="bookThumbnail" src="" alt="書影" style="max-width:100px; max-height:150px; display:none; border:1px solid #ccc;">
@@ -52,9 +53,9 @@
     <input type="hidden" id="thumbnail_exists" value="false">
     <input type="hidden" id="hit_ndl" value="false">
     <div class="form-buttons">
-        <button type="button" onclick="location.href='/control_menu.html'">管理メニュー</button>
-        <button type="button" onclick="clearForm()">クリア</button>
-        <button type="submit" onclick="registerBook(event)">登録</button>
+        <button type="button" class="btn btn-secondary" onclick="location.href='/control_menu.html'">管理メニュー</button>
+        <button type="button" class="btn btn-clear" onclick="clearForm()">クリア</button>
+        <button type="submit" class="btn btn-register" onclick="registerBook(event)">登録</button>
     </div>
 </form>
 <h2>登録データ一覧</h2>
