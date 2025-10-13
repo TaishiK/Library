@@ -10,7 +10,7 @@ import ldap # python-ldap ライブラリをインポート
 import ldap.sasl # SASL認証のためにインポート
 #from ldap3 import Server, Connection, ALL, SASL, GSSAPI # ldap3ライブラリを使用する場合
 #import gssapi # GSSAPI認証のためにインポート
-from ldap3 import Server, Connection, Tls, SASL, KERBEROS, ALL
+from ldap3 import Server, Connection, Tls, KERBEROS, SASL, ALL
 import gssapi
 import ssl
 from dotenv import load_dotenv

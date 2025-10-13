@@ -1,6 +1,6 @@
 Flask==2.0.3
-Flask-SQLAlchemy==2.5.1
-psycopg2-binary==2.9.1
+Flask-SQLAlchemy==3.1.1
+psycopg2-binary==2.9.11
 python-ldap==3.3.1
 ldap3==2.9
 python-dotenv==0.19.2
