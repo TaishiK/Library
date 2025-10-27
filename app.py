@@ -36,8 +36,8 @@ app = Flask(__name__, static_folder='static')
 # SQLAlchemy設定
 echo_setting = True  # SQL発行ログを有効化
 def get_db_uri():
-    return 'postgresql+psycopg2://kunori:taishi@localhost:5432/libraries'
-
+    #return 'postgresql+psycopg2://kunori:taishi@localhost:5432/libraries'
+    return 'postgresql+psycopg2://ubuntu:ubuntu@localhost:5432/libraries'
 app.config['SQLALCHEMY_DATABASE_URI'] = get_db_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = echo_setting
