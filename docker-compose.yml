@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  # Flask Web Application (using host PostgreSQL)
+  web:
+    build: .
+    container_name: library_web
+    network_mode: "host"
+    environment:
+      - FLASK_ENV=production
+      - FLASK_APP=app.py
+      - DATABASE_URL=postgresql+psycopg2://ubuntu:ubuntu@localhost:5432/libraries
+    volumes:
+      - ./certificates:/etc/ssl/certs
+    restart: unless-stopped
+    command: ["python", "app.py"]

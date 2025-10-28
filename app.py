@@ -36,8 +36,9 @@ app = Flask(__name__, static_folder='static')
 # SQLAlchemy設定
 echo_setting = True  # SQL発行ログを有効化
 def get_db_uri():
-    #return 'postgresql+psycopg2://kunori:taishi@localhost:5432/libraries'
-    return 'postgresql+psycopg2://ubuntu:ubuntu@localhost:5432/libraries'
+    # 環境変数からデータベースURLを取得、デフォルトはローカル設定
+    database_url = os.getenv('DATABASE_URL', 'postgresql+psycopg2://ubuntu:ubuntu@localhost:5432/libraries')
+    return database_url
 app.config['SQLALCHEMY_DATABASE_URI'] = get_db_uri()
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SQLALCHEMY_ECHO'] = echo_setting
@@ -427,4 +428,5 @@ def generate_dummy_isbn():
 
 if __name__ == '__main__':
     #init_db() # init_dbは起動時に一度だけ実行されれば良い
-    app.run(debug=True) # デバッグモードで起動
+    # Docker環境対応: すべてのインターフェースでリッスン
+    app.run(host='0.0.0.0', port=5000, debug=os.getenv('FLASK_ENV') == 'development')

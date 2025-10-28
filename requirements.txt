@@ -7,4 +7,4 @@ python-dotenv==0.19.2
 requests==2.26.0
 pytest==7.4.4
 gssapi==1.8.3
-nfcpy==1.0.4
+# nfcpy==1.0.4  # NFCが必要な場合はコメントアウトを解除
